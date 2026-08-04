@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12211d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nakit Akışı">
+<title>Nakit Akışı Çarşaf</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#12211d;
+    --paper-raised:#17281f;
+    --line:#25392e;
+    --line-strong:#33493c;
+    --ink:#e9e5d6;
+    --ink-dim:#9db0a5;
+    --ink-faint:#5f7268;
+    --gold:#c9a24d;
+    --gold-dim:#8a733a;
+    --gelir:#4fb286;
+    --gelir-bg:#16261f;
+    --gider:#c1553f;
+    --gider-bg:#241c19;
+    --kredi-bg:#22201c;
+    --filled:#1e3d2c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0; height:100%; overflow:hidden;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  #app{
+    height:100vh;
+    height:100dvh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:40px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+
+  header{padding:18px 14px 6px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-dim); margin:0 0 4px;}
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:22px; margin:0 0 4px; letter-spacing:-.01em;}
+  .hint{font-size:11.5px; color:var(--ink-faint); margin:0; line-height:1.5;}
+
+  .year-bar{display:flex; align-items:center; gap:8px; padding:12px 14px 6px;}
+  .year-scroll{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; flex:1;}
+  .year-scroll::-webkit-scrollbar{display:none;}
+  .year-chip{
+    flex:none; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;
+    padding:8px 14px; border-radius:20px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer;
+  }
+  .year-chip.active{background:var(--gold); border-color:var(--gold); color:#12211d;}
+  .year-add{
+    flex:none; width:36px; height:36px; border-radius:50%; border:1px dashed var(--gold-dim); background:transparent;
+    color:var(--gold); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+
+  .dash-btn-row{padding:6px 14px 10px;}
+  .dash-btn{
+    width:100%; padding:13px; border-radius:11px; border:1px solid var(--gold);
+    background:linear-gradient(135deg, rgba(201,162,77,0.16), rgba(201,162,77,0.05));
+    color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; letter-spacing:.03em;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .back-btn{
+    background:none; border:1px solid var(--line-strong); color:var(--ink-dim); border-radius:9px;
+    padding:9px 14px; font-family:'IBM Plex Mono',monospace; font-size:12px; cursor:pointer; margin:0 14px 12px;
+  }
+
+  .topbar{display:flex; gap:10px; padding:8px 14px 14px; flex-wrap:wrap;}
+  .topfield{flex:1; min-width:140px; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:8px 12px;}
+  .topfield label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:3px;}
+  .topfield input, .topfield select{width:100%; background:transparent; border:none; color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; padding:0;}
+  .topfield input:focus, .topfield select:focus{outline:none;}
+  .topfield select{-webkit-appearance:none; appearance:none;}
+  .topfield select option{background:var(--paper-raised); color:var(--ink);}
+
+  .install-note{
+    margin:0 14px 12px; padding:10px 12px; background:rgba(201,162,77,0.08);
+    border:1px solid var(--gold-dim); border-radius:10px; font-size:11.5px; color:var(--ink-dim); line-height:1.55;
+  }
+  .install-note b{color:var(--gold);}
+  .install-note button{
+    margin-top:8px; background:var(--gold); color:#12211d; border:none; border-radius:7px;
+    padding:7px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700; cursor:pointer;
+  }
+
+  .backup-bar{display:flex; gap:8px; padding:0 14px 12px; flex-wrap:wrap;}
+  .backup-btn{
+    flex:1; min-width:100px; padding:10px 8px; border-radius:9px; border:1px solid var(--gold-dim); background:transparent;
+    color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; cursor:pointer;
+    text-align:center;
+  }
+  .backup-btn.primary{background:var(--gold); color:#12211d; border-color:var(--gold);}
+  .backup-btn:active{background:rgba(201,162,77,0.1);}
+  #importFile{display:none;}
+
+  .swipe-note{
+    display:flex; align-items:center; gap:6px; margin:0 14px 10px; padding:8px 12px;
+    background:rgba(201,162,77,0.08); border:1px dashed var(--gold-dim); border-radius:9px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold-dim);
+  }
+
+  .grid-wrap{overflow-x:auto; overflow-y:auto; max-height:55vh; padding:0 0 4px; -webkit-overflow-scrolling:touch; border-bottom:1px solid var(--line-strong);}
+  table{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%;}
+
+  th, td{border-bottom:1px solid var(--line); padding:0; white-space:nowrap;}
+
+  thead th{
+    position:sticky; top:0; z-index:3;
+    background:#1e3327; color:var(--ink-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.03em;
+    font-weight:600; padding:6px 4px; text-align:center; border-bottom:1px solid var(--line-strong);
+  }
+  thead tr.month-header th{font-size:10px; padding:7px 4px; border-right:1px solid var(--line-strong);}
+  tbody tr{scroll-margin-top:88px;}
+  .cell-input, .cat-input{scroll-margin-top:88px;}
+  thead tr.sub-header th{font-size:8.5px; padding:5px 2px; color:var(--ink-faint); font-weight:600;}
+  thead tr.sub-header th.b-col{color:var(--gold-dim);}
+  thead tr.sub-header th.g-col{color:var(--ink-dim);}
+  thead tr.sub-header th.f-col{color:var(--ink-faint); border-right:1px solid var(--line-strong);}
+  thead th.sticky-col{position:sticky; left:0; top:0; z-index:4; text-align:left; padding-left:12px;}
+
+  td.sticky-col, th.sticky-col{border-right:2px solid var(--gold-dim);}
+  td.sticky-col{position:sticky; left:0; z-index:2; background:var(--paper-raised);}
+  tr.gelir-row td.sticky-col{background:var(--gelir-bg);}
+  tr.gider-row td.sticky-col{background:var(--gider-bg);}
+  tr.gelir-row td{background:var(--gelir-bg);}
+  tr.gider-row td{background:var(--gider-bg);}
+  tr.gider-row.group-kredi td.sticky-col{background:var(--kredi-bg);}
+  tr.gider-row.group-kredi td{background:var(--kredi-bg);}
+
+  td.cell-filled{background:var(--filled) !important;}
+
+  .sticky-col-inner{display:flex; align-items:center; gap:2px;}
+  .cat-input{
+    width:96px; border:none; background:transparent; color:var(--ink); font-size:12.5px; font-weight:600;
+    padding:9px 4px 9px 12px; font-family:'Inter',sans-serif;
+  }
+  .cat-input:focus{outline:none; color:var(--gold);}
+  .del-btn-inline{
+    flex:none; background:none; border:1px solid var(--line-strong); border-radius:6px; color:var(--ink-faint);
+    font-size:12px; cursor:pointer; padding:3px 6px; margin-right:6px;
+  }
+  .del-btn-inline:active{color:#fff; background:var(--gider); border-color:var(--gider);}
+
+  @keyframes rowPulse{
+    0%{ box-shadow: inset 0 0 0 2px var(--gold); }
+    50%{ box-shadow: inset 0 0 0 2px transparent; }
+    100%{ box-shadow: inset 0 0 0 2px var(--gold); }
+  }
+  tr.row-highlight td{ animation: rowPulse 0.7s ease-in-out 3; }
+  tr.row-highlight td.sticky-col{ animation: rowPulse 0.7s ease-in-out 3; }
+
+  .cell-input{
+    width:52px; border:none; background:transparent; color:var(--ink); font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; text-align:right; padding:8px 4px; border-right:1px solid var(--line);
+  }
+  .cell-input:focus{outline:none; background:rgba(201,162,77,0.14);}
+  .cell-input.budget{color:var(--gold);}
+  .cell-input.actual{color:var(--ink);}
+
+  .fark-cell{
+    width:52px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-align:right; padding:8px 5px;
+    font-weight:600; border-right:1px solid var(--line-strong);
+  }
+  .fark-cell.pos{color:var(--gelir);}
+  .fark-cell.neg{color:var(--gider);}
+
+  .readonly-cell{
+    width:80px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; text-align:right; padding:9px 8px;
+    font-weight:600;
+  }
+  .readonly-cell.gelir-c{color:var(--gelir);}
+  .readonly-cell.gider-c{color:var(--gider);}
+  .readonly-cell.pos{color:var(--gelir);}
+  .readonly-cell.neg{color:var(--gider);}
+
+  tr.section-row td{
+    background:#1e3327; color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:11px;
+    text-transform:uppercase; letter-spacing:.08em; font-weight:700; padding:8px 12px; border-bottom:1px solid var(--line-strong);
+  }
+  tr.section-row td.sticky-col{background:#1e3327;}
+
+  tr.subsection-row td{
+    background:#1b2b22; color:var(--ink-dim); font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.06em; font-weight:700; padding:7px 12px 7px 20px; border-bottom:1px solid var(--line);
+  }
+  tr.subsection-row td.sticky-col{background:#1b2b22;}
+  tr.subsection-row.kredi td{color:#c9b27a;}
+
+  tr.add-row td{padding:6px 12px 6px 20px; background:var(--paper);}
+  tr.add-row td.sticky-col{background:var(--paper);}
+  .add-btn{
+    background:none; border:1px dashed var(--gold-dim); color:var(--gold-dim); font-family:'IBM Plex Mono',monospace;
+    font-size:11px; padding:6px 12px; border-radius:7px; cursor:pointer;
+  }
+
+  tr.subtotal-row td{background:#1e2f26; font-weight:700; padding:8px 4px; border-top:1px solid var(--line);}
+  tr.subtotal-row td.sticky-col{background:#1e2f26; padding-left:20px; color:var(--ink-dim); font-size:10.5px; text-transform:uppercase; letter-spacing:.02em; font-family:'IBM Plex Mono',monospace;}
+  tr.subtotal-row .fark-cell, tr.subtotal-row .readonly-cell{font-size:10.5px;}
+
+  tr.total-row td{background:#20362a; font-weight:700; padding:8px 4px; border-top:1px solid var(--line-strong);}
+  tr.total-row td.sticky-col{background:#20362a; padding-left:12px; color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:.02em; font-family:'IBM Plex Mono',monospace;}
+  tr.total-row .fark-cell, tr.total-row .readonly-cell{font-size:10.5px;}
+
+  tr.net-row td{background:var(--gold); padding:9px 4px;}
+  tr.net-row td.sticky-col{background:var(--gold); color:#12211d; padding-left:12px; font-family:'Fraunces',serif; font-weight:700; font-size:12px;}
+  tr.net-row .fark-cell, tr.net-row .readonly-cell{color:#12211d; font-size:10.5px;}
+
+  tr.devir-row td{background:#0d1815; padding:10px 4px; border-top:2px solid var(--gold);}
+  tr.devir-row td.sticky-col{background:#0d1815; color:var(--gold); padding-left:12px; font-family:'Fraunces',serif; font-weight:700; font-size:12px;}
+  tr.devir-row .readonly-cell{color:var(--gold); font-size:11px; font-weight:700;}
+
+  .summary-cards{display:flex; gap:10px; padding:16px 14px 4px; overflow-x:auto;}
+  .scard{flex:none; min-width:130px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .scard-label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:6px;}
+  .scard-val{font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:700;}
+  .scard-val.pos{color:var(--gelir);} .scard-val.neg{color:var(--gider);} .scard-val.gold{color:var(--gold);}
+
+  .loading{text-align:center; padding:60px 20px; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; font-size:12px;}
+
+  /* Dashboard */
+  .dash-section{padding:6px 14px 4px;}
+  .dash-card{background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .dash-card h3{font-family:'Fraunces',serif; font-size:15px; margin:0 0 12px; color:var(--gold); font-weight:600;}
+  .range-row{display:flex; gap:10px; margin-bottom:14px;}
+  .range-field{flex:1; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:8px 10px;}
+  .range-field label{display:block; font-size:9.5px; text-transform:uppercase; color:var(--ink-faint); margin-bottom:3px; letter-spacing:.05em;}
+  .range-field select{width:100%; background:transparent; border:none; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;}
+  .range-field select option{background:var(--paper-raised); color:var(--ink);}
+
+  .dash-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .dash-mini{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:11px 13px;}
+  .dash-mini-label{font-size:9.5px; text-transform:uppercase; color:var(--ink-faint); letter-spacing:.05em; margin-bottom:5px;}
+  .dash-mini-val{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700;}
+
+  .dash-table{width:100%; border-collapse:collapse; margin-top:4px;}
+  .dash-table th{text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; padding:6px 4px; border-bottom:1px solid var(--line-strong);}
+  .dash-table th:first-child{text-align:left;}
+  .dash-table td{text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 4px; border-bottom:1px solid var(--line);}
+  .dash-table td:first-child{text-align:left; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;}
+  .dash-table tr.grand td{font-weight:700; border-top:1px solid var(--gold-dim); color:var(--gold);}
+
+  .recon-input{width:100%; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:10px 12px; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; margin-top:4px;}
+  .recon-input:focus{outline:1px solid var(--gold-dim);}
+  .recon-result{margin-top:14px; padding:14px; border-radius:11px; text-align:center;}
+  .recon-result.ok{background:rgba(79,178,134,0.12); border:1px solid var(--gelir);}
+  .recon-result.bad{background:rgba(193,85,63,0.12); border:1px solid var(--gider);}
+  .recon-result.neutral{background:rgba(201,162,77,0.08); border:1px solid var(--gold-dim);}
+  .recon-label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:4px;}
+  .recon-val{font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700;}
+  .recon-val.pos{color:var(--gelir);} .recon-val.neg{color:var(--gider);}
+
+  /* Report */
+  .report-doc{padding:6px 14px 4px;}
+  .report-meta{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-faint); margin:0 0 16px; line-height:1.6;}
+  .report-card{background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:18px 18px 16px; margin-bottom:14px; border-left:3px solid var(--gold);}
+  .report-card h3{font-family:'Fraunces',serif; font-size:15.5px; margin:0 0 10px; color:var(--gold); font-weight:600;}
+  .report-card p{font-size:13px; line-height:1.75; color:var(--ink); margin:0 0 10px;}
+  .report-card p:last-child{margin-bottom:0;}
+  .report-card.rec{border-left-color:var(--gelir);}
+  .report-card.rec ul{margin:0; padding-left:18px;}
+  .report-card.rec li{font-size:13px; line-height:1.7; color:var(--ink); margin-bottom:8px;}
+  .report-card.rec li:last-child{margin-bottom:0;}
+  .report-card.warn{border-left-color:var(--gider);}
+  .report-actions{display:flex; gap:8px; padding:4px 0 14px;}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">yükleniyor…</div></div>
+<script id="app-data" type="application/json">{}</script>
+
+<script>
+  const PRISTINE_HTML = document.documentElement.outerHTML;
+(function(){
+  const MONTHS = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  const MONTHS_FULL = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const STORAGE_KEY = "cashflow_sheet_v5";
+
+  let appData = null;
+  let saveTimer = null;
+  let deferredPrompt = null;
+  let fileHandle = null;
+  let viewMode = 'main';
+  let dashRange = { start: 0, end: 11 };
+  let dashBankMonth = new Date().getMonth();
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('installBtn');
+    if(btn) btn.style.display = 'inline-block';
+  });
+
+  function mkRow(name){
+    const months = [];
+    for(let i=0;i<12;i++) months.push({budget:0, actual:0});
+    return { id: 'r'+Date.now()+Math.random().toString(36).slice(2,7), name: name, months: months };
+  }
+
+  function defaultYearState(){
+    return {
+      startBalance: 0,
+      bankCheck: {},
+      gelir: [
+        mkRow("Maaş"), mkRow("Müzik / Telif"), mkRow("Sponsorluk"), mkRow("Freelance"), mkRow("Diğer Gelir")
+      ],
+      giderGroups: [
+        { id:'nakit', name:'Nakit Giderler', rows:[
+          mkRow("Kira"), mkRow("Faturalar"), mkRow("Market"), mkRow("Ulaşım"),
+          mkRow("Ekipman"), mkRow("Prodüksiyon"), mkRow("Eğlence"), mkRow("Diğer Gider")
+        ]},
+        { id:'kredi', name:'Kredi Kartı', rows:[
+          mkRow("Kredi Kartı 1")
+        ]}
+      ]
+    };
+  }
+
+  function defaultAppData(){
+    const y = new Date().getFullYear();
+    const data = { currentYear: y, years: {} };
+    data.years[y] = defaultYearState();
+    return data;
+  }
+
+  // ---- Turkish-style number parsing/formatting ----
+  function parseTRNumber(v){
+    if(v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    if(s === '') return 0;
+    s = s.replace(/\s/g,'');
+    const neg = s.indexOf('-') === 0;
+    s = s.replace(/-/g,'');
+    s = s.replace(/\./g,'').replace(',', '.');
+    let n = parseFloat(s);
+    if(isNaN(n)) n = 0;
+    return neg ? -n : n;
+  }
+  function fmt(n){
+    if(!n) n = 0;
+    return n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+  function fmtInput(n){
+    if(!n) return '';
+    return fmt(n);
+  }
+
+  function migrateYearState(parsed){
+    if(!parsed || !Array.isArray(parsed.gelir)) return null;
+    if(Array.isArray(parsed.gider) && !parsed.giderGroups){
+      parsed.giderGroups = [
+        { id:'nakit', name:'Nakit Giderler', rows: parsed.gider },
+        { id:'kredi', name:'Kredi Kartı', rows: [] }
+      ];
+      delete parsed.gider;
+    }
+    if(!Array.isArray(parsed.giderGroups)) return null;
+    if(typeof parsed.startBalance !== 'number') parsed.startBalance = parseTRNumber(parsed.startBalance);
+    if(!parsed.bankCheck || typeof parsed.bankCheck !== 'object') parsed.bankCheck = {};
+    return parsed;
+  }
+
+  function migrateAppData(raw){
+    if(!raw) return null;
+    if(raw.years && typeof raw.years === 'object'){
+      const years = {};
+      let ok = false;
+      Object.keys(raw.years).forEach(y=>{
+        const ys = migrateYearState(raw.years[y]);
+        if(ys){ years[y] = ys; ok = true; }
+      });
+      if(!ok) return null;
+      let currentYear = raw.currentYear;
+      if(!years[currentYear]) currentYear = Object.keys(years).sort()[0];
+      return { currentYear: parseInt(currentYear,10), years };
+    }
+    if(Array.isArray(raw.gelir)){
+      const ys = migrateYearState(raw);
+      if(!ys) return null;
+      const y = raw.year || new Date().getFullYear();
+      const data = { currentYear: y, years: {} };
+      data.years[y] = ys;
+      return data;
+    }
+    return null;
+  }
+
+  function readEmbeddedState(){
+    try{
+      const tag = document.getElementById('app-data');
+      if(!tag) return null;
+      const text = tag.textContent.trim();
+      if(!text || text === '{}') return null;
+      return migrateAppData(JSON.parse(text));
+    }catch(e){ return null; }
+  }
+
+  function loadData(){
+    const embedded = readEmbeddedState();
+    if(embedded){ appData = embedded; render(); return; }
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? migrateAppData(JSON.parse(raw)) : null;
+      appData = parsed || defaultAppData();
+    }catch(e){
+      appData = defaultAppData();
+    }
+    render();
+  }
+  function scheduleSave(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }catch(e){ console.error(e); }
+    }, 400);
+  }
+
+  function yearState(){ return appData.years[appData.currentYear]; }
+
+  function sumRows(rows){
+    const budget = new Array(12).fill(0);
+    const actual = new Array(12).fill(0);
+    rows.forEach(r=> r.months.forEach((m,i)=>{ budget[i]+=parseTRNumber(m.budget); actual[i]+=parseTRNumber(m.actual); }));
+    return { budget, actual };
+  }
+
+  function computeTotals(ys){
+    const gelirT = sumRows(ys.gelir);
+    const groupTotals = ys.giderGroups.map(g => ({ id:g.id, name:g.name, ...sumRows(g.rows) }));
+    const giderBudget = new Array(12).fill(0);
+    const giderActual = new Array(12).fill(0);
+    groupTotals.forEach(gt=>{
+      gt.budget.forEach((v,i)=> giderBudget[i]+=v);
+      gt.actual.forEach((v,i)=> giderActual[i]+=v);
+    });
+    const netBudget = gelirT.budget.map((g,i)=> g - giderBudget[i]);
+    const netActual = gelirT.actual.map((g,i)=> g - giderActual[i]);
+    const netFark = netActual.map((n,i)=> n - netBudget[i]);
+    const devir = [];
+    netActual.forEach((n,i)=>{
+      const prev = i===0 ? parseTRNumber(ys.startBalance) : devir[i-1];
+      devir.push(prev + n);
+    });
+    return { gelirBudget:gelirT.budget, gelirActual:gelirT.actual, groupTotals, giderBudget, giderActual, netBudget, netActual, netFark, devir };
+  }
+
+  function rowTotals(r){
+    let b=0,a=0;
+    r.months.forEach(m=>{ b+=parseTRNumber(m.budget); a+=parseTRNumber(m.actual); });
+    return { budget:b, actual:a, fark:a-b };
+  }
+
+  function rangeSum(arr, s, e){ let sum=0; for(let i=s;i<=e;i++) sum+=arr[i]; return sum; }
+
+  function render(){
+    if(viewMode === 'dashboard'){ renderDashboard(); return; }
+    if(viewMode === 'report'){ renderReport(); return; }
+    const app = document.getElementById('app');
+    const prevGridWrap = document.querySelector('.grid-wrap');
+    const prevScrollLeft = prevGridWrap ? prevGridWrap.scrollLeft : 0;
+    const prevGridScrollTop = prevGridWrap ? prevGridWrap.scrollTop : 0;
+    const prevAppScrollTop = app.scrollTop;
+    const ys = yearState();
+    const t = computeTotals(ys);
+    const yGelirB = t.gelirBudget.reduce((a,b)=>a+b,0);
+    const yGelirA = t.gelirActual.reduce((a,b)=>a+b,0);
+    const yGiderB = t.giderBudget.reduce((a,b)=>a+b,0);
+    const yGiderA = t.giderActual.reduce((a,b)=>a+b,0);
+    const yNetB = yGelirB - yGiderB;
+    const yNetA = yGelirA - yGiderA;
+    const currentDevir = t.devir[t.devir.length-1];
+
+    let relevantMonthIdx = -1;
+    for(let i=11;i>=0;i--){
+      if(t.gelirActual[i]!==0 || t.giderActual[i]!==0){ relevantMonthIdx = i; break; }
+    }
+    if(relevantMonthIdx === -1){
+      const realNow = new Date();
+      relevantMonthIdx = (appData.currentYear === realNow.getFullYear()) ? realNow.getMonth() : 0;
+    }
+    const relMonthName = MONTHS_FULL[relevantMonthIdx];
+    const relBudget = t.netBudget[relevantMonthIdx];
+    const relActual = t.netActual[relevantMonthIdx];
+    const relFark = t.netFark[relevantMonthIdx];
+
+    let html = '';
+    html += '<header><p class="eyebrow">Manuel Çarşaf Rapor</p><h1>Nakit Akışı Tablosu</h1><p class="hint">Bir aya Bütçe girdiğinde o aydan itibaren sonraki aylara otomatik dağıtılır, istediğin ayı sonradan değiştirebilirsin.</p></header>';
+
+    const years = Object.keys(appData.years).map(y=>parseInt(y,10)).sort((a,b)=>a-b);
+    html += '<div class="year-bar"><div class="year-scroll">';
+    years.forEach(y=>{
+      html += '<button class="year-chip'+(y===appData.currentYear?' active':'')+'" data-year="'+y+'">'+y+'</button>';
+    });
+    html += '</div><button class="year-add" id="addYearBtn" title="Yeni yıl ekle">+</button></div>';
+
+    html += '<div class="dash-btn-row"><button class="dash-btn" id="openDashBtn">📊 Dashboard\'u Aç</button></div>';
+
+    html += '<div class="topbar">';
+    html += '<div class="topfield"><label>Başlangıç Devir Bakiyesi ('+appData.currentYear+')</label><input type="text" inputmode="decimal" id="startBalInput" value="'+fmtInput(ys.startBalance)+'"></div>';
+    html += '</div>';
+
+    html += '<div class="install-note"><b>Telefona kurmak için:</b> Chrome menüsü (⋮) → "Uygulamayı yükle" veya "Ana ekrana ekle". Simge ana ekranına eklenir, tam ekran açılır.<br><button id="installBtn" style="display:none;">Şimdi Yükle</button></div>';
+
+    html += '<div class="backup-bar">';
+    html += '<button class="backup-btn primary" id="saveBtn">💾 Kaydet</button>';
+    html += '<button class="backup-btn" id="importBtn">📂 Aç</button>';
+    html += '<button class="backup-btn" id="exportBtn">⬇️ Kopya İndir</button>';
+    html += '<input type="file" id="importFile" accept="text/html,.html,.htm">';
+    html += '</div>';
+    html += '<div class="swipe-note" style="margin-top:-6px;">İlk "Kaydet"te dosyanı seç (üstüne yazmak için aynısını seç) — sonraki her "Kaydet" o dosyanın üstüne yazar. Tüm yıllar aynı dosyada saklanır.</div>';
+
+    html += '<div class="summary-cards">';
+    html += scard('Yıllık Bütçe Net', yNetB, yNetB>=0?'pos':'neg');
+    html += scard('Yıllık Gerçek Net', yNetA, yNetA>=0?'pos':'neg');
+    html += scard('Yıllık Fark', yNetA-yNetB, (yNetA-yNetB)>=0?'pos':'neg');
+    html += scard('Güncel Devir', currentDevir, 'gold');
+    html += '</div>';
+
+    html += '<div class="summary-cards" style="padding-top:0;">';
+    html += scard(relMonthName+' Bütçe Net', relBudget, relBudget>=0?'pos':'neg');
+    html += scard(relMonthName+' Gerçek Net', relActual, relActual>=0?'pos':'neg');
+    html += scard(relMonthName+' Fark', relFark, relFark>=0?'pos':'neg');
+    html += '</div>';
+
+    html += '<div class="swipe-note">→ Tüm ayları görmek için tabloyu yana kaydırın. Doldurulan "Gerçek" hücreleri o ay için yeşile boyanır.</div>';
+
+    html += '<div class="grid-wrap"><table>';
+    html += '<thead>';
+    html += '<tr class="month-header"><th class="sticky-col" rowspan="2">Kategori</th>';
+    MONTHS.forEach(m=> html += '<th colspan="3">'+m+'</th>');
+    html += '<th rowspan="2">Top.<br>Bütçe</th><th rowspan="2">Top.<br>Gerçek</th><th rowspan="2">Top.<br>Fark</th>';
+    html += '</tr>';
+    html += '<tr class="sub-header">';
+    for(let i=0;i<12;i++){ html += '<th class="b-col">B</th><th class="g-col">G</th><th class="f-col">F</th>'; }
+    html += '</tr>';
+    html += '</thead><tbody>';
+
+    html += '<tr class="section-row"><td class="sticky-col" colspan="40">GELİR</td></tr>';
+    ys.gelir.forEach((r,idx)=> html += renderRow(r, idx, 'gelir', null));
+    html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gelir">+ Gelir Kategorisi Ekle</button></td></tr>';
+
+    html += '<tr class="section-row"><td class="sticky-col" colspan="40">GİDER</td></tr>';
+    ys.giderGroups.forEach(group=>{
+      html += '<tr class="subsection-row'+(group.id==='kredi'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
+      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gider', group.id));
+      html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gider" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
+      const gt = sumRows(group.rows);
+      html += subtotalRowHtml(group.name+' Toplamı', gt.budget, gt.actual);
+    });
+
+    html += totalRow('TOPLAM GELİR', t.gelirBudget, t.gelirActual, yGelirB, yGelirA, 'gelir-c', false);
+    html += totalRow('TOPLAM GİDER', t.giderBudget, t.giderActual, yGiderB, yGiderA, 'gider-c', true);
+
+    html += netRowHtml(t.netBudget, t.netActual, t.netFark, yNetB, yNetA, yNetA-yNetB);
+
+    html += devirRowHtml(t.devir);
+
+    html += '</tbody></table></div>';
+
+    app.innerHTML = html;
+    attachHandlers();
+
+    const newGridWrap = document.querySelector('.grid-wrap');
+    if(newGridWrap){ newGridWrap.scrollLeft = prevScrollLeft; newGridWrap.scrollTop = prevGridScrollTop; }
+    app.scrollTop = prevAppScrollTop;
+  }
+
+  function scard(label, val, cls){
+    return '<div class="scard"><div class="scard-label">'+label+'</div><div class="scard-val '+cls+'">'+(val>=0&&cls==='pos'?'+':'')+fmt(val)+' ₺</div></div>';
+  }
+
+  function renderRow(r, idx, type, groupId){
+    const tot = rowTotals(r);
+    const isGider = (type === 'gider');
+    const rowCls = type+'-row'+(groupId==='kredi' ? ' group-kredi' : '');
+    let html = '<tr class="'+rowCls+'" data-type="'+type+'" data-idx="'+idx+'"'+(groupId?(' data-group="'+groupId+'"'):'')+'>';
+    html += '<td class="sticky-col"><div class="sticky-col-inner"><button class="del-btn-inline" data-del="'+type+'" data-delidx="'+idx+'"'+(groupId?(' data-delgroup="'+groupId+'"'):'')+' title="Kategoriyi sil">✕</button><input class="cat-input" value="'+escapeAttr(r.name)+'" data-field="name"></div></td>';
+    for(let i=0;i<12;i++){
+      const m = r.months[i];
+      const b = parseTRNumber(m.budget), a = parseTRNumber(m.actual);
+      const f = isGider ? (b - a) : (a - b);
+      const filled = a !== 0;
+      const fc = filled ? ' cell-filled' : '';
+      const bDisp = isGider ? -b : b;
+      const aDisp = isGider ? -a : a;
+      html += '<td class="'+fc.trim()+'"><input class="cell-input budget" type="text" inputmode="decimal" value="'+fmtInput(bDisp)+'" data-field="budget" data-month="'+i+'"></td>';
+      html += '<td class="'+fc.trim()+'"><input class="cell-input actual" type="text" inputmode="decimal" value="'+fmtInput(aDisp)+'" data-field="actual" data-month="'+i+'"></td>';
+      html += '<td class="fark-cell'+fc+' '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    }
+    const totFark = isGider ? (tot.budget - tot.actual) : tot.fark;
+    const totBudgetDisp = isGider ? -tot.budget : tot.budget;
+    const totActualDisp = isGider ? -tot.actual : tot.actual;
+    html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totBudgetDisp)+'</td>';
+    html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totActualDisp)+'</td>';
+    html += '<td class="readonly-cell '+(totFark>=0?'pos':'neg')+'">'+(totFark>=0?'+':'')+fmt(totFark)+'</td>';
+    html += '</tr>';
+    return html;
+  }
+
+  function subtotalRowHtml(label, budgetArr, actualArr){
+    let html = '<tr class="subtotal-row"><td class="sticky-col">'+escapeAttr(label)+'</td>';
+    let yb=0, ya=0;
+    for(let i=0;i<12;i++){
+      const f = budgetArr[i]-actualArr[i];
+      yb += budgetArr[i]; ya += actualArr[i];
+      html += '<td class="readonly-cell">'+fmt(-budgetArr[i])+'</td>';
+      html += '<td class="readonly-cell">'+fmt(-actualArr[i])+'</td>';
+      html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    }
+    const yf = yb-ya;
+    html += '<td class="readonly-cell">'+fmt(-yb)+'</td>';
+    html += '<td class="readonly-cell">'+fmt(-ya)+'</td>';
+    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
+    html += '</tr>';
+    return html;
+  }
+
+  function totalRow(label, budgetArr, actualArr, yb, ya, colorCls, isGider){
+    let html = '<tr class="total-row"><td class="sticky-col">'+label+'</td>';
+    for(let i=0;i<12;i++){
+      const f = isGider ? (budgetArr[i]-actualArr[i]) : (actualArr[i]-budgetArr[i]);
+      const bDisp = isGider ? -budgetArr[i] : budgetArr[i];
+      const aDisp = isGider ? -actualArr[i] : actualArr[i];
+      html += '<td class="readonly-cell '+colorCls+'">'+fmt(bDisp)+'</td>';
+      html += '<td class="readonly-cell '+colorCls+'">'+fmt(aDisp)+'</td>';
+      html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    }
+    const ybDisp = isGider ? -yb : yb;
+    const yaDisp = isGider ? -ya : ya;
+    html += '<td class="readonly-cell '+colorCls+'">'+fmt(ybDisp)+'</td>';
+    html += '<td class="readonly-cell '+colorCls+'">'+fmt(yaDisp)+'</td>';
+    const yf = isGider ? (yb-ya) : (ya-yb);
+    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
+    html += '</tr>';
+    return html;
+  }
+
+  function netRowHtml(netBudget, netActual, netFark, yNetB, yNetA, yNetF){
+    let html = '<tr class="net-row"><td class="sticky-col">NET AKIŞ</td>';
+    for(let i=0;i<12;i++){
+      html += '<td class="readonly-cell">'+(netBudget[i]>=0?'+':'')+fmt(netBudget[i])+'</td>';
+      html += '<td class="readonly-cell">'+(netActual[i]>=0?'+':'')+fmt(netActual[i])+'</td>';
+      html += '<td class="fark-cell">'+(netFark[i]>=0?'+':'')+fmt(netFark[i])+'</td>';
+    }
+    html += '<td class="readonly-cell">'+(yNetB>=0?'+':'')+fmt(yNetB)+'</td>';
+    html += '<td class="readonly-cell">'+(yNetA>=0?'+':'')+fmt(yNetA)+'</td>';
+    html += '<td class="readonly-cell">'+(yNetF>=0?'+':'')+fmt(yNetF)+'</td>';
+    html += '</tr>';
+    return html;
+  }
+
+  function devirRowHtml(devir){
+    let html = '<tr class="devir-row"><td class="sticky-col">DEVREDEN BAKİYE</td>';
+    devir.forEach(v=>{
+      html += '<td class="readonly-cell" colspan="3">'+(v>=0?'+':'')+fmt(v)+'</td>';
+    });
+    html += '<td class="readonly-cell"></td><td class="readonly-cell"></td><td class="readonly-cell">'+(devir[devir.length-1]>=0?'+':'')+fmt(devir[devir.length-1])+'</td></tr>';
+    return html;
+  }
+
+  function escapeAttr(s){
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
+
+  function findGiderGroup(ys, groupId){
+    return ys.giderGroups.find(g=> g.id === groupId);
+  }
+
+  // ---------------- Dashboard ----------------
+  function renderDashboard(){
+    const app = document.getElementById('app');
+    const ys = yearState();
+    const t = computeTotals(ys);
+    const s = dashRange.start, e = dashRange.end;
+
+    const rGelirB = rangeSum(t.gelirBudget, s, e);
+    const rGelirA = rangeSum(t.gelirActual, s, e);
+    const rGiderB = rangeSum(t.giderBudget, s, e);
+    const rGiderA = rangeSum(t.giderActual, s, e);
+    const rNetB = rGelirB - rGiderB;
+    const rNetA = rGelirA - rGiderA;
+    const rFark = rNetA - rNetB;
+
+    let html = '';
+    html += '<header><p class="eyebrow">Dashboard</p><h1>Dönem Özeti — '+appData.currentYear+'</h1><p class="hint">Seçtiğin ay aralığı için bütçe / gerçekleşen toplamları ve banka bakiye kontrolü.</p></header>';
+    html += '<button class="back-btn" id="backBtn">← Ana Ekrana Dön</button>';
+    html += '<div class="dash-btn-row"><button class="dash-btn" id="openReportBtn">📄 Finansal Analiz Raporu Oluştur</button></div>';
+
+    html += '<div class="dash-section"><div class="dash-card">';
+    html += '<h3>Dönem Aralığı</h3>';
+    html += '<div class="range-row">';
+    html += '<div class="range-field"><label>Başlangıç Ayı</label><select id="rangeStart">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===s?' selected':'')+'>'+m+'</option>');
+    html += '</select></div>';
+    html += '<div class="range-field"><label>Bitiş Ayı</label><select id="rangeEnd">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===e?' selected':'')+'>'+m+'</option>');
+    html += '</select></div>';
+    html += '</div>';
+
+    html += '<div class="dash-grid">';
+    html += dashMini('Bütçe Gelir', rGelirB, rGelirB>=0?'pos':'neg');
+    html += dashMini('Gerçek Gelir', rGelirA, rGelirA>=0?'pos':'neg');
+    html += dashMini('Bütçe Gider', -rGiderB, 'neg');
+    html += dashMini('Gerçek Gider', -rGiderA, 'neg');
+    html += dashMini('Bütçe Net', rNetB, rNetB>=0?'pos':'neg');
+    html += dashMini('Gerçek Net', rNetA, rNetA>=0?'pos':'neg');
+    html += '</div>';
+
+    html += '<table class="dash-table"><thead><tr><th>Kalem</th><th>Bütçe</th><th>Gerçek</th><th>Fark</th></tr></thead><tbody>';
+    html += dashTableRow('Gelir', rGelirB, rGelirA, false);
+    t.groupTotals.forEach(gt=>{
+      const gb = rangeSum(gt.budget, s, e), ga = rangeSum(gt.actual, s, e);
+      html += dashTableRow(gt.name, gb, ga, true);
+    });
+    html += dashTableRow('Toplam Gider', rGiderB, rGiderA, true);
+    html += '<tr class="grand"><td>NET</td><td>'+fmt(rNetB)+'</td><td>'+fmt(rNetA)+'</td><td class="'+(rFark>=0?'':'')+'" style="color:'+(rFark>=0?'#4fb286':'#c1553f')+'">'+(rFark>=0?'+':'')+fmt(rFark)+'</td></tr>';
+    html += '</tbody></table>';
+    html += '</div>';
+
+    // Bank reconciliation
+    const bankVal = ys.bankCheck && ys.bankCheck[dashBankMonth] !== undefined ? ys.bankCheck[dashBankMonth] : null;
+    const computedDevir = t.devir[dashBankMonth];
+    html += '<div class="dash-card">';
+    html += '<h3>Banka Bakiye Kontrolü</h3>';
+    html += '<div class="range-row"><div class="range-field"><label>Ay</label><select id="bankMonthSelect">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===dashBankMonth?' selected':'')+'>'+m+'</option>');
+    html += '</select></div></div>';
+    html += '<label style="font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);">Banka Nakit Bakiyesi ('+MONTHS_FULL[dashBankMonth]+')</label>';
+    html += '<input type="text" inputmode="decimal" class="recon-input" id="bankBalInput" value="'+(bankVal!==null?fmtInput(bankVal):'')+'" placeholder="0,00">';
+
+    if(bankVal !== null){
+      const diff = bankVal - computedDevir;
+      const cls = Math.abs(diff) < 0.01 ? 'ok' : (diff < 0 ? 'bad' : 'ok');
+      const label = Math.abs(diff) < 0.01 ? 'Tam Uyumlu' : (diff < 0 ? 'Eksik (Hesaplanandan Az)' : 'Fazla (Hesaplanandan Çok)');
+      html += '<div class="recon-result '+cls+'">';
+      html += '<div class="recon-label">Hesaplanan Net Cash (Devreden Bakiye): '+fmt(computedDevir)+' ₺</div>';
+      html += '<div class="recon-val '+(diff<0?'neg':'pos')+'">'+(diff>=0?'+':'')+fmt(diff)+' ₺</div>';
+      html += '<div class="recon-label" style="margin-top:4px;">'+label+'</div>';
+      html += '</div>';
+    } else {
+      html += '<div class="recon-result neutral"><div class="recon-label">Hesaplanan Net Cash (Devreden Bakiye): '+fmt(computedDevir)+' ₺ — karşılaştırmak için banka bakiyeni gir</div></div>';
+    }
+    html += '</div>';
+    html += '</div>';
+
+    app.innerHTML = html;
+    attachDashboardHandlers();
+  }
+
+  function dashMini(label, val, cls){
+    return '<div class="dash-mini"><div class="dash-mini-label">'+label+'</div><div class="dash-mini-val '+cls+'">'+(val>=0&&cls==='pos'?'+':'')+fmt(val)+' ₺</div></div>';
+  }
+  function dashTableRow(label, b, a, isGider){
+    const f = isGider ? (b-a) : (a-b);
+    const bDisp = isGider ? -b : b;
+    const aDisp = isGider ? -a : a;
+    return '<tr><td>'+escapeAttr(label)+'</td><td>'+fmt(bDisp)+'</td><td>'+fmt(aDisp)+'</td><td style="color:'+(f>=0?'#4fb286':'#c1553f')+'">'+(f>=0?'+':'')+fmt(f)+'</td></tr>';
+  }
+
+  // ---------------- Report engine ----------------
+  function analyzeYear(ys){
+    const t = computeTotals(ys);
+    let lastActive = -1;
+    for(let i=11;i>=0;i--){
+      if(t.gelirActual[i]!==0 || t.giderActual[i]!==0){ lastActive = i; break; }
+    }
+    const hasData = lastActive >= 0;
+    const activeCount = lastActive+1;
+    const sr = (arr,s,e)=>{ let x=0; for(let i=s;i<=e;i++) x+=arr[i]; return x; };
+
+    const yearIncB = sr(t.gelirBudget,0,11);
+    const yearExpB = sr(t.giderBudget,0,11);
+
+    if(!hasData){
+      return {
+        hasData:false, yearIncB, yearExpB, yearNetB: yearIncB-yearExpB,
+        groupBudgets: t.groupTotals.map(g=>({name:g.name, budget: sr(g.budget,0,11)})),
+        startBalance: parseTRNumber(ys.startBalance)
+      };
+    }
+
+    const incB = sr(t.gelirBudget,0,lastActive);
+    const incA = sr(t.gelirActual,0,lastActive);
+    const expB = sr(t.giderBudget,0,lastActive);
+    const expA = sr(t.giderActual,0,lastActive);
+    const netA = incA-expA;
+    const netB = incB-expB;
+
+    const groupToDate = t.groupTotals.map(g=>({ name:g.name, budget:sr(g.budget,0,lastActive), actual:sr(g.actual,0,lastActive) }));
+    const krediGroup = groupToDate.find(g=> g.name.toLowerCase().indexOf('kredi') >= 0);
+    const krediOran = expA>0 && krediGroup ? (krediGroup.actual/expA*100) : 0;
+
+    const currentDevir = t.devir[lastActive];
+    const netsToDate = [];
+    for(let i=0;i<=lastActive;i++) netsToDate.push(t.gelirActual[i]-t.giderActual[i]);
+    const avgNet = activeCount>0 ? netA/activeCount : 0;
+    const recentCount = Math.min(3, netsToDate.length);
+    const recentAvg = recentCount>0 ? netsToDate.slice(-recentCount).reduce((a,b)=>a+b,0)/recentCount : 0;
+    const remainingMonths = 12-activeCount;
+    const projectedYearEnd = currentDevir + recentAvg*remainingMonths;
+    let monthsToNegative = null;
+    if(recentAvg<0 && currentDevir>0){
+      monthsToNegative = Math.ceil(currentDevir/(-recentAvg));
+    }
+    const incSapma = incB!==0 ? ((incA-incB)/Math.abs(incB)*100) : null;
+    const expSapma = expB!==0 ? ((expA-expB)/Math.abs(expB)*100) : null;
+
+    // ---- Budget-plan based projection for the remaining (not-yet-realized) months ----
+    let remainingBudgetNet = 0, projectedYearEnd_budget = null, monthsToNegative_budget = null;
+    const remainingMonthDetail = [];
+    if(remainingMonths > 0){
+      let runningDevir = currentDevir;
+      for(let i=lastActive+1;i<=11;i++){
+        const monthNet = t.gelirBudget[i] - t.giderBudget[i];
+        remainingBudgetNet += monthNet;
+        runningDevir += monthNet;
+        remainingMonthDetail.push({ idx:i, net: monthNet, devir: runningDevir });
+        if(monthsToNegative_budget === null && runningDevir < 0){
+          monthsToNegative_budget = i - lastActive;
+        }
+      }
+      projectedYearEnd_budget = currentDevir + remainingBudgetNet;
+    }
+    let projectionDivergence = null;
+    if(projectedYearEnd_budget !== null){
+      const base = Math.max(Math.abs(projectedYearEnd), Math.abs(projectedYearEnd_budget), 1);
+      projectionDivergence = Math.abs(projectedYearEnd - projectedYearEnd_budget) / base * 100;
+    }
+
+    return {
+      hasData:true, activeCount, lastActive, incB, incA, expB, expA, netA, netB,
+      groupToDate, krediOran, currentDevir, avgNet, recentAvg, recentCount, remainingMonths,
+      projectedYearEnd, monthsToNegative, incSapma, expSapma,
+      remainingBudgetNet, projectedYearEnd_budget, monthsToNegative_budget, remainingMonthDetail, projectionDivergence,
+      startBalance: parseTRNumber(ys.startBalance)
+    };
+  }
+
+  function renderReport(){
+    const app = document.getElementById('app');
+    const ys = yearState();
+    const a = analyzeYear(ys);
+    const now = new Date();
+    const nowStr = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+
+    let html = '';
+    html += '<header><p class="eyebrow">Finansal Analiz</p><h1>Nakit Durumu Raporu — '+appData.currentYear+'</h1></header>';
+    html += '<button class="back-btn" id="backToDashBtn">← Dashboard\'a Dön</button>';
+
+    html += '<div class="report-doc">';
+    html += '<p class="report-meta">Bu rapor, girilen bütçe ve gerçekleşen verilere dayanarak otomatik oluşturulmuştur · '+nowStr+'</p>';
+
+    if(!a.hasData){
+      html += '<div class="report-card">';
+      html += '<h3>Henüz Gerçekleşen Veri Yok</h3>';
+      html += '<p>'+appData.currentYear+' yılı için henüz hiçbir ayda "Gerçek" gelir/gider girilmemiş. Anlamlı bir analiz yapabilmem için en az bir ayın gerçekleşen rakamlarını ana ekrandan işlemen gerekiyor.</p>';
+      html += '<p>Yine de planlanan bütçene göre genel görünüm şöyle: yıllık toplam bütçelenen gelir <b>'+fmt(a.yearIncB)+' ₺</b>, toplam bütçelenen gider <b>'+fmt(a.yearExpB)+' ₺</b>, planlanan yıllık net <b>'+fmt(a.yearNetB)+' ₺</b>. Başlangıç devir bakiyen <b>'+fmt(a.startBalance)+' ₺</b>.</p>';
+      html += '</div>';
+      html += '</div>';
+      app.innerHTML = html;
+      attachReportHandlers(null);
+      return;
+    }
+
+    const lastMonthName = MONTHS_FULL[a.lastActive];
+
+    // 1. Genel durum
+    html += '<div class="report-card">';
+    html += '<h3>Genel Durum</h3>';
+    html += '<p>'+appData.currentYear+' yılında Ocak\'tan '+lastMonthName+' ayına kadar ('+a.activeCount+' aylık) girilen gerçekleşen verilere göre toplam <b>'+fmt(a.incA)+' ₺</b> gelir elde edildi, <b>'+fmt(a.expA)+' ₺</b> gider gerçekleşti. Bu dönemin net nakit akışı '+(a.netA>=0?'pozitif':'negatif')+' yönde <b>'+fmt(Math.abs(a.netA))+' ₺</b> oldu. '+lastMonthName+' ayı sonu itibarıyla eldeki (devreden) nakit bakiyeniz yaklaşık <b>'+fmt(a.currentDevir)+' ₺</b>.</p>';
+    html += '</div>';
+
+    // 2. Gelir analizi
+    html += '<div class="report-card">';
+    html += '<h3>Gelir Analizi</h3>';
+    let gelirP = 'Bu döneme kadar bütçelenen gelir <b>'+fmt(a.incB)+' ₺</b> iken, gerçekleşen gelir <b>'+fmt(a.incA)+' ₺</b> oldu.';
+    if(a.incSapma !== null){
+      if(a.incSapma >= 0){
+        gelirP += ' Gerçekleşen gelir, bütçelenenin yaklaşık %'+fmt(Math.abs(a.incSapma))+' üzerinde — bu olumlu bir tablo, gelir tarafı planlanandan güçlü ilerliyor.';
+      } else if(a.incSapma > -10){
+        gelirP += ' Gerçekleşen gelir, bütçelenenin yaklaşık %'+fmt(Math.abs(a.incSapma))+' altında kaldı; küçük bir sapma, yakından takip etmekte fayda var.';
+      } else {
+        gelirP += ' Gerçekleşen gelir, bütçelenenin yaklaşık %'+fmt(Math.abs(a.incSapma))+' altında kaldı; bu belirgin bir gelir açığı, kaynağının ne olduğunu incelemek gerekir.';
+      }
+    }
+    html += '<p>'+gelirP+'</p>';
+    html += '</div>';
+
+    // 3. Gider analizi
+    html += '<div class="report-card'+(a.krediOran>40?' warn':'')+'">';
+    html += '<h3>Gider Analizi</h3>';
+    let giderP = 'Bu döneme kadar bütçelenen gider <b>'+fmt(a.expB)+' ₺</b>, gerçekleşen gider <b>'+fmt(a.expA)+' ₺</b> oldu';
+    if(a.expSapma !== null){
+      if(a.expSapma <= 0){
+        giderP += ' — bütçenin yaklaşık %'+fmt(Math.abs(a.expSapma))+' altında kalınarak gider disiplini korunmuş.';
+      } else if(a.expSapma < 15){
+        giderP += ' — bütçenin yaklaşık %'+fmt(a.expSapma)+' üzerinde, hafif bir aşım var.';
+      } else {
+        giderP += ' — bütçenin yaklaşık %'+fmt(a.expSapma)+' üzerinde, belirgin bir bütçe aşımı söz konusu.';
+      }
+    }
+    html += '<p>'+giderP+'</p>';
+    let breakdownP = a.groupToDate.map(function(g){ return g.name+': <b>'+fmt(g.actual)+' ₺</b>'; }).join(', ');
+    html += '<p>Kırılım olarak: '+breakdownP+'.</p>';
+    if(a.krediOran > 40){
+      html += '<p>Kredi kartı harcamaları toplam giderin yaklaşık <b>%'+fmt(a.krediOran)+'</b>\'ini oluşturuyor — bu oran dikkat çekici düzeyde yüksek ve faiz/gecikme maliyeti riski taşıyor.</p>';
+    } else if(a.krediOran > 20){
+      html += '<p>Kredi kartı harcamaları toplam giderin yaklaşık <b>%'+fmt(a.krediOran)+'</b>\'ini oluşturuyor — orta düzeyde, yakından izlenmesi faydalı olur.</p>';
+    } else if(a.krediOran > 0){
+      html += '<p>Kredi kartı harcamaları toplam giderin yalnızca yaklaşık <b>%'+fmt(a.krediOran)+'</b>\'i düzeyinde — sınırlı ve sağlıklı bir görünüm.</p>';
+    }
+    html += '</div>';
+
+    // 4. Nakit pozisyonu ve trend
+    html += '<div class="report-card">';
+    html += '<h3>Nakit Pozisyonu ve Trend</h3>';
+    let trendP = 'Son '+a.recentCount+' ayın ortalama net nakit akışı <b>'+fmt(a.recentAvg)+' ₺</b>, yıl genelindeki ortalama ise <b>'+fmt(a.avgNet)+' ₺</b>.';
+    if(a.recentAvg < a.avgNet - Math.abs(a.avgNet*0.1)){
+      trendP += ' Son dönemde nakit üretme gücünüzde bir yavaşlama görülüyor.';
+    } else if(a.recentAvg > a.avgNet + Math.abs(a.avgNet*0.1)){
+      trendP += ' Son dönemde nakit üretme performansınız güçleniyor, olumlu bir ivme var.';
+    } else {
+      trendP += ' Genel olarak istikrarlı bir seyir izliyor.';
+    }
+    html += '<p>'+trendP+'</p>';
+    html += '</div>';
+
+    // 5. Öngörü
+    const riskFlag_trend = a.monthsToNegative && a.monthsToNegative<=a.remainingMonths;
+    const riskFlag_budget = a.monthsToNegative_budget !== null;
+    html += '<div class="report-card'+((riskFlag_trend||riskFlag_budget)?' warn':'')+'">';
+    html += '<h3>Yıl Sonu Öngörüsü — Trend ve Bütçe Bazlı</h3>';
+    if(a.remainingMonths > 0){
+      html += '<p>Kalan '+a.remainingMonths+' ay için iki farklı yöntemle öngörü yapılabilir:</p>';
+      html += '<p><b>1) Trend bazlı:</b> Son '+a.recentCount+' ayın gerçekleşen ortalaması ('+fmt(a.recentAvg)+' ₺/ay net) aynen devam ederse, yıl sonunda eldeki nakit yaklaşık <b>'+fmt(a.projectedYearEnd)+' ₺</b> olur.</p>';
+      html += '<p><b>2) Bütçe planına göre:</b> Kalan aylar için zaten '+MONTHS_FULL[a.lastActive+1]+'\'dan itibaren girilmiş olan bütçe rakamları esas alınırsa (planlanan net '+fmt(a.remainingBudgetNet)+' ₺), yıl sonu bakiyesi yaklaşık <b>'+fmt(a.projectedYearEnd_budget)+' ₺</b> olarak öngörülüyor.</p>';
+
+      if(a.projectionDivergence !== null && a.projectionDivergence > 25){
+        html += '<p>İki öngörü arasında belirgin bir fark var (yaklaşık %'+fmt(a.projectionDivergence)+'). Bu, ya bütçe planının biraz iyimser/kötümser kurgulandığını ya da son dönemdeki gerçekleşen performansın bütçeden saptığını gösteriyor — bütçenizi gözden geçirmekte fayda olabilir.</p>';
+      }
+
+      if(riskFlag_trend){
+        html += '<p>Trend eğilimi aynı şekilde sürerse, yaklaşık <b>'+a.monthsToNegative+' ay içinde</b> nakit bakiyenizin eksiye dönmesi olası görünüyor.</p>';
+      }
+      if(riskFlag_budget){
+        html += '<p>Girilmiş bütçe planına göre bile, yaklaşık <b>'+a.monthsToNegative_budget+' ay sonra ('+MONTHS_FULL[a.lastActive+a.monthsToNegative_budget]+')</b> nakit bakiyenizin eksiye dönmesi bekleniyor — bu, plandan kaynaklanan bilinen bir risk.</p>';
+      }
+      if(riskFlag_trend || riskFlag_budget){
+        html += '<p>Bu ihtimale karşı önceden bir kredi limiti, ek finansman veya nakit desteği ayarlamanız faydalı olur.</p>';
+      } else if(a.projectedYearEnd < 0 || a.projectedYearEnd_budget < 0){
+        html += '<p>Her iki öngörüde de yıl sonu bakiyesi zayıf görünüyor; gider tarafında kısa vadede önlem almanız önerilir.</p>';
+      }
+    } else {
+      html += '<p>Yılın tüm ayları için veri girilmiş durumda, ek bir projeksiyona gerek yok. '+appData.currentYear+' yılı fiilen <b>'+fmt(a.currentDevir)+' ₺</b> devreden bakiye ile tamamlandı.</p>';
+    }
+    html += '</div>';
+
+    // 6. Öneriler
+    const recs = [];
+    if(a.netA < 0){
+      recs.push('Genel nakit akışınız bu dönemde negatif seyrediyor; gider kalemlerini gözden geçirmek veya ek bir gelir kaynağı yaratmak öncelikli olmalı.');
+    }
+    if(a.krediOran > 40){
+      recs.push('Kredi kartı bağımlılığını azaltmak için sabit giderleri mümkün olduğunca nakit/banka üzerinden karşılamayı ve kart borcunu döndürmeden kapatmayı hedefleyin.');
+    }
+    if((a.monthsToNegative && a.monthsToNegative<=a.remainingMonths) || a.monthsToNegative_budget !== null){
+      recs.push('Öngörülen nakit sıkışıklığına karşı, ihtiyaç doğmadan önce bir kredi limiti veya finansman kaynağı araştırmanız, ani nakit sıkıntısı yaşamamanız açısından önerilir.');
+    }
+    if(a.expSapma !== null && a.expSapma >= 15){
+      recs.push('Gider tarafında bütçe aşımı belirgin; hangi kategorilerin bütçeyi aştığını ana ekrandaki Fark sütunlarından inceleyip önceliklendirme yapabilirsiniz.');
+    }
+    if(a.projectionDivergence !== null && a.projectionDivergence > 25){
+      recs.push('Trend ile bütçe planı arasındaki fark büyük; kalan aylar için girdiğiniz bütçe rakamlarını güncel gerçeklere göre yeniden gözden geçirmeniz öngörünün güvenilirliğini artırır.');
+    }
+    if(recs.length === 0){
+      recs.push('Genel tablo sağlıklı görünüyor: gelir gider dengesi olumlu, kredi kartı kullanımı sınırlı. Bu performansı korursanız birikim yapmayı veya küçük bir yatırımı değerlendirmeyi düşünebilirsiniz.');
+    }
+    html += '<div class="report-card rec">';
+    html += '<h3>Öneriler</h3>';
+    html += '<ul>' + recs.map(function(r){ return '<li>'+r+'</li>'; }).join('') + '</ul>';
+    html += '</div>';
+
+    html += '<div class="report-actions"><button class="backup-btn" id="copyReportBtn">📋 Raporu Kopyala</button></div>';
+
+    html += '</div>';
+    app.innerHTML = html;
+    attachReportHandlers(a);
+  }
+
+  function attachReportHandlers(a){
+    document.getElementById('backToDashBtn').onclick = ()=>{ viewMode='dashboard'; render(); };
+    const copyBtn = document.getElementById('copyReportBtn');
+    if(copyBtn){
+      copyBtn.onclick = ()=>{
+        const text = document.querySelector('.report-doc').innerText;
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(function(){
+            const orig = copyBtn.textContent;
+            copyBtn.textContent = '✓ Kopyalandı';
+            setTimeout(function(){ copyBtn.textContent = orig; }, 1400);
+          }).catch(function(){ alert('Kopyalama başarısız oldu.'); });
+        } else {
+          alert('Bu tarayıcı otomatik kopyalamayı desteklemiyor. Metni elle seçip kopyalayabilirsin.');
+        }
+      };
+    }
+  }
+
+  function attachDashboardHandlers(){
+    document.getElementById('backBtn').onclick = ()=>{ viewMode='main'; render(); };
+    document.getElementById('openReportBtn').onclick = ()=>{ viewMode='report'; render(); };
+    document.getElementById('rangeStart').onchange = (e)=>{ dashRange.start = parseInt(e.target.value,10); if(dashRange.start>dashRange.end) dashRange.end=dashRange.start; render(); };
+    document.getElementById('rangeEnd').onchange = (e)=>{ dashRange.end = parseInt(e.target.value,10); if(dashRange.end<dashRange.start) dashRange.start=dashRange.end; render(); };
+    document.getElementById('bankMonthSelect').onchange = (e)=>{ dashBankMonth = parseInt(e.target.value,10); render(); };
+    document.getElementById('bankBalInput').onchange = (e)=>{
+      const ys = yearState();
+      if(!ys.bankCheck) ys.bankCheck = {};
+      const v = e.target.value.trim();
+      if(v === ''){ delete ys.bankCheck[dashBankMonth]; }
+      else{ ys.bankCheck[dashBankMonth] = parseTRNumber(v); }
+      scheduleSave();
+      render();
+    };
+  }
+
+  // ---------------- Main screen handlers ----------------
+  function attachHandlers(){
+    const ys = yearState();
+
+    document.getElementById('openDashBtn').onclick = ()=>{ viewMode='dashboard'; render(); };
+
+    document.querySelectorAll('.year-chip').forEach(chip=>{
+      chip.onclick = ()=>{
+        appData.currentYear = parseInt(chip.dataset.year,10);
+        scheduleSave();
+        render();
+      };
+    });
+
+    document.getElementById('addYearBtn').onclick = ()=>{
+      const years = Object.keys(appData.years).map(y=>parseInt(y,10));
+      const maxYear = Math.max.apply(null, years);
+      const newYear = maxYear + 1;
+      if(appData.years[newYear]){ appData.currentYear = newYear; render(); return; }
+      const srcYs = appData.years[maxYear];
+      const t = computeTotals(srcYs);
+      const newYs = {
+        startBalance: t.devir[t.devir.length-1] || 0,
+        bankCheck: {},
+        gelir: srcYs.gelir.map(r=> mkRow(r.name)),
+        giderGroups: srcYs.giderGroups.map(g=> ({ id:g.id, name:g.name, rows: g.rows.map(r=> mkRow(r.name)) }))
+      };
+      appData.years[newYear] = newYs;
+      appData.currentYear = newYear;
+      scheduleSave();
+      render();
+    };
+
+    document.getElementById('startBalInput').onchange = (e)=>{
+      ys.startBalance = parseTRNumber(e.target.value);
+      scheduleSave();
+      render();
+    };
+
+    document.querySelectorAll('tr[data-type]').forEach(tr=>{
+      const type = tr.dataset.type, idx = parseInt(tr.dataset.idx,10);
+      let row;
+      if(type === 'gelir'){ row = ys.gelir[idx]; }
+      else{ const group = findGiderGroup(ys, tr.dataset.group); row = group.rows[idx]; }
+      tr.querySelectorAll('input').forEach(inp=>{
+        inp.onchange = ()=>{
+          const field = inp.dataset.field;
+          if(field === 'name'){
+            row.name = inp.value;
+          } else if(field === 'budget'){
+            const monthIdx = parseInt(inp.dataset.month,10);
+            let val = parseTRNumber(inp.value);
+            if(type === 'gider') val = Math.abs(val);
+            for(let i=monthIdx;i<12;i++){ row.months[i].budget = val; }
+          } else if(field === 'actual'){
+            let val = parseTRNumber(inp.value);
+            if(type === 'gider') val = Math.abs(val);
+            row.months[parseInt(inp.dataset.month,10)].actual = val;
+          }
+          scheduleSave();
+          render();
+        };
+      });
+    });
+
+    document.querySelectorAll('[data-add]').forEach(btn=>{
+      btn.onclick = ()=>{
+        let newIdx;
+        if(btn.dataset.add === 'gelir'){
+          ys.gelir.push(mkRow('Yeni Kategori'));
+          newIdx = ys.gelir.length-1;
+        } else {
+          const group = findGiderGroup(ys, btn.dataset.group);
+          group.rows.push(mkRow('Yeni Kategori'));
+          newIdx = group.rows.length-1;
+        }
+        scheduleSave();
+        render();
+        const sel = btn.dataset.add === 'gelir'
+          ? 'tr[data-type="gelir"][data-idx="'+newIdx+'"]'
+          : 'tr[data-type="gider"][data-group="'+btn.dataset.group+'"][data-idx="'+newIdx+'"]';
+        const newRow = document.querySelector(sel);
+        if(newRow){
+          setTimeout(()=>{
+            scrollFieldIntoTopView(newRow);
+            newRow.classList.add('row-highlight');
+            setTimeout(()=>{ newRow.classList.remove('row-highlight'); }, 2200);
+          }, 50);
+        }
+      };
+    });
+
+    document.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const type = btn.dataset.del, idx = parseInt(btn.dataset.delidx,10);
+        if(type === 'gelir'){
+          ys.gelir.splice(idx,1);
+        } else {
+          const group = findGiderGroup(ys, btn.dataset.delgroup);
+          group.rows.splice(idx,1);
+        }
+        scheduleSave();
+        render();
+      };
+    });
+
+    function buildHtmlWithState(){
+      const dataJson = JSON.stringify(appData).replace(/</g, '\\u003c');
+      return '<!DOCTYPE html>\n' + PRISTINE_HTML.replace(
+        /(<script id="app-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
+        function(m, p1, p2, p3){ return p1 + dataJson + p3; }
+      );
+    }
+
+    document.getElementById('exportBtn').onclick = ()=>{
+      try{
+        const blob = new Blob([buildHtmlWithState()], {type:'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const d = new Date();
+        const stamp = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        a.href = url;
+        a.download = 'nakit-akisi-kopya-'+stamp+'.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=> URL.revokeObjectURL(url), 2000);
+      }catch(e){ alert('İndirme başarısız oldu.'); }
+    };
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.onclick = async ()=>{
+      if(!window.showSaveFilePicker){
+        alert('Bu tarayıcı dosyanın üstüne doğrudan kaydetmeyi desteklemiyor. Bunun yerine "Kopya İndir" kullan ve indirdiğin dosyayı eskisinin üzerine taşı.');
+        return;
+      }
+      try{
+        if(!fileHandle){
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: 'nakit-akisi-carsaf.html',
+            types: [{ description:'HTML dosyası', accept:{'text/html':['.html']} }]
+          });
+        }
+        const writable = await fileHandle.createWritable();
+        await writable.write(buildHtmlWithState());
+        await writable.close();
+        const original = saveBtn.textContent;
+        saveBtn.textContent = '✓ Kaydedildi';
+        setTimeout(()=>{ saveBtn.textContent = original; }, 1400);
+      }catch(e){
+        if(e && e.name !== 'AbortError'){
+          alert('Kaydetme başarısız: ' + e.message);
+        }
+      }
+    };
+
+    document.getElementById('importBtn').onclick = async ()=>{
+      if(window.showOpenFilePicker){
+        try{
+          const [handle] = await window.showOpenFilePicker({
+            types: [{ description:'HTML dosyası', accept:{'text/html':['.html','.htm']} }]
+          });
+          const file = await handle.getFile();
+          const text = await file.text();
+          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
+          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
+          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
+          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
+          fileHandle = handle;
+          appData = parsed;
+          scheduleSave();
+          render();
+        }catch(e){
+          if(e && e.name !== 'AbortError') alert('Dosya açılamadı: ' + e.message);
+        }
+      } else {
+        document.getElementById('importFile').click();
+      }
+    };
+    document.getElementById('importFile').onchange = (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try{
+          const text = ev.target.result;
+          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
+          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
+          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
+          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
+          appData = parsed;
+          scheduleSave();
+          render();
+        }catch(err){
+          alert('Dosya okunamadı. Geçerli bir .html yedek dosyası seçtiğinden emin ol.');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    const installBtn = document.getElementById('installBtn');
+    if(installBtn){
+      installBtn.onclick = async ()=>{
+        if(deferredPrompt){
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        }
+      };
+    }
+  }
+
+  let currentFocusedInput = null;
+
+  function scrollFieldIntoTopView(el){
+    try{
+      el.scrollIntoView(true); // legacy boolean form: align to top — works in virtually every WebView
+    }catch(e){
+      try{ el.scrollIntoView({block:'start'}); }catch(e2){}
+    }
+  }
+
+  function keepFocusedVisible(){
+    const el = currentFocusedInput;
+    if(!el || !document.body.contains(el)) return;
+    scrollFieldIntoTopView(el);
+  }
+
+  document.addEventListener('focusin', function(e){
+    if(e.target && e.target.tagName === 'INPUT' && e.target.closest('#app')){
+      currentFocusedInput = e.target;
+      setTimeout(keepFocusedVisible, 50);
+      setTimeout(keepFocusedVisible, 250);
+      setTimeout(keepFocusedVisible, 500);
+      setTimeout(keepFocusedVisible, 800);
+      setTimeout(keepFocusedVisible, 1200);
+    }
+  });
+  document.addEventListener('focusout', function(e){
+    if(e.target === currentFocusedInput) currentFocusedInput = null;
+  });
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.tagName === 'INPUT' && e.target.closest('#app')){
+      currentFocusedInput = e.target;
+      keepFocusedVisible();
+    }
+  });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', function(){
+      setTimeout(keepFocusedVisible, 50);
+      setTimeout(keepFocusedVisible, 300);
+      setTimeout(keepFocusedVisible, 600);
+    });
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>
