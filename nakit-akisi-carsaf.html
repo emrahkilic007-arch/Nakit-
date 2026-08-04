@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -171,6 +172,13 @@
   .cell-input:focus{outline:none; background:rgba(201,162,77,0.14);}
   .cell-input.budget{color:var(--gold);}
   .cell-input.actual{color:var(--ink);}
+
+  .budget-cell{padding:0 !important; border-right:1px solid var(--line);}
+  .budget-cell-inner{display:flex; align-items:center;}
+  .budget-cell .cell-input.budget{width:42px; border-right:none; padding:8px 2px 8px 4px;}
+  .sync-check{
+    width:13px; height:13px; margin:0 4px 0 0; flex:none; accent-color:var(--gold); cursor:pointer;
+  }
 
   .fark-cell{
     width:52px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-align:right; padding:8px 5px;
@@ -454,7 +462,12 @@
       const prev = i===0 ? parseTRNumber(ys.startBalance) : devir[i-1];
       devir.push(prev + n);
     });
-    return { gelirBudget:gelirT.budget, gelirActual:gelirT.actual, groupTotals, giderBudget, giderActual, netBudget, netActual, netFark, devir };
+    const devirBudget = [];
+    netBudget.forEach((n,i)=>{
+      const prev = i===0 ? parseTRNumber(ys.startBalance) : devirBudget[i-1];
+      devirBudget.push(prev + n);
+    });
+    return { gelirBudget:gelirT.budget, gelirActual:gelirT.actual, groupTotals, giderBudget, giderActual, netBudget, netActual, netFark, devir, devirBudget };
   }
 
   function rowTotals(r){
@@ -566,7 +579,7 @@
 
     html += netRowHtml(t.netBudget, t.netActual, t.netFark, yNetB, yNetA, yNetA-yNetB);
 
-    html += devirRowHtml(t.devir);
+    html += devirRowHtml(t.devirBudget, t.devir);
 
     html += '</tbody></table></div>';
 
@@ -596,7 +609,8 @@
       const fc = filled ? ' cell-filled' : '';
       const bDisp = isGider ? -b : b;
       const aDisp = isGider ? -a : a;
-      html += '<td class="'+fc.trim()+'"><input class="cell-input budget" type="text" inputmode="decimal" value="'+fmtInput(bDisp)+'" data-field="budget" data-month="'+i+'"></td>';
+      const matched = (b !== 0 && a === b);
+      html += '<td class="'+fc.trim()+' budget-cell"><div class="budget-cell-inner"><input class="cell-input budget" type="text" inputmode="decimal" value="'+fmtInput(bDisp)+'" data-field="budget" data-month="'+i+'"><input type="checkbox" class="sync-check" data-month="'+i+'" title="Bütçeyi gerçekleşene kopyala"'+(matched?' checked':'')+'></div></td>';
       html += '<td class="'+fc.trim()+'"><input class="cell-input actual" type="text" inputmode="decimal" value="'+fmtInput(aDisp)+'" data-field="actual" data-month="'+i+'"></td>';
       html += '<td class="fark-cell'+fc+' '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
     }
@@ -662,12 +676,19 @@
     return html;
   }
 
-  function devirRowHtml(devir){
+  function devirRowHtml(devirBudget, devirActual){
     let html = '<tr class="devir-row"><td class="sticky-col">DEVREDEN BAKİYE</td>';
-    devir.forEach(v=>{
-      html += '<td class="readonly-cell" colspan="3">'+(v>=0?'+':'')+fmt(v)+'</td>';
-    });
-    html += '<td class="readonly-cell"></td><td class="readonly-cell"></td><td class="readonly-cell">'+(devir[devir.length-1]>=0?'+':'')+fmt(devir[devir.length-1])+'</td></tr>';
+    for(let i=0;i<12;i++){
+      const b = devirBudget[i], a = devirActual[i], f = a-b;
+      html += '<td class="readonly-cell">'+(b>=0?'+':'')+fmt(b)+'</td>';
+      html += '<td class="readonly-cell">'+(a>=0?'+':'')+fmt(a)+'</td>';
+      html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    }
+    const yb = devirBudget[11], ya = devirActual[11], yf = ya-yb;
+    html += '<td class="readonly-cell">'+(yb>=0?'+':'')+fmt(yb)+'</td>';
+    html += '<td class="readonly-cell">'+(ya>=0?'+':'')+fmt(ya)+'</td>';
+    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
+    html += '</tr>';
     return html;
   }
 
@@ -1081,6 +1102,19 @@
       if(type === 'gelir'){ row = ys.gelir[idx]; }
       else{ const group = findGiderGroup(ys, tr.dataset.group); row = group.rows[idx]; }
       tr.querySelectorAll('input').forEach(inp=>{
+        if(inp.classList.contains('sync-check')){
+          inp.onchange = ()=>{
+            const monthIdx = parseInt(inp.dataset.month,10);
+            if(inp.checked){
+              row.months[monthIdx].actual = parseTRNumber(row.months[monthIdx].budget);
+            } else {
+              row.months[monthIdx].actual = 0;
+            }
+            scheduleSave();
+            render();
+          };
+          return;
+        }
         inp.onchange = ()=>{
           const field = inp.dataset.field;
           if(field === 'name'){
