@@ -260,6 +260,7 @@
   .dash-table td{text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 4px; border-bottom:1px solid var(--line);}
   .dash-table td:first-child{text-align:left; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;}
   .dash-table tr.grand td{font-weight:700; border-top:1px solid var(--gold-dim); color:var(--gold);}
+  .dash-table tr.devir-summary-row td{background:#182b22;color:var(--gold);font-weight:700;}
 
   .recon-input{width:100%; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:10px 12px; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; margin-top:4px;}
   .recon-input:focus{outline:1px solid var(--gold-dim);}
@@ -270,6 +271,51 @@
   .recon-label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:4px;}
   .recon-val{font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700;}
   .recon-val.pos{color:var(--gelir);} .recon-val.neg{color:var(--gider);}
+
+
+
+  .devir-card{margin:0 0 14px;padding:13px 15px;border:1px solid var(--gold-dim);border-radius:10px;background:#182b22;}
+  .devir-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;}
+  .devir-value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--ink);margin-top:4px;}
+  .devir-hint{font-size:9px;color:var(--ink-faint);margin-top:3px;}
+  .monthly-devir{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding:13px 15px;border:1px solid var(--gold-dim);border-radius:10px;background:#182b22;}
+  .monthly-devir .label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;}
+  .monthly-devir .value{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:var(--ink);}
+
+  /* Monthly mixed actual/budget dashboard */
+  .monthly-wrap{padding:6px 14px 24px;}
+  .monthly-note{font-size:11px;color:var(--ink-dim);line-height:1.55;margin:0 0 12px;}
+  .monthly-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;}
+  .monthly-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 8px;border-radius:7px;border:1px solid var(--line);}
+  .monthly-pill.actual{color:var(--gelir);border-color:var(--gelir);background:rgba(79,178,134,.08);}
+  .monthly-pill.budget{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,162,77,.08);}
+  .monthly-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;-webkit-overflow-scrolling:touch;margin-bottom:14px;}
+  .monthly-table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;}
+  .monthly-table th,.monthly-table td{border-bottom:1px solid var(--line);padding:0;white-space:nowrap;}
+  .monthly-table thead th{position:sticky;top:0;z-index:3;background:#1e3327;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;padding:8px 7px;text-align:right;border-right:1px solid var(--line);}
+  .monthly-table thead th:first-child{text-align:left;position:sticky;left:0;z-index:5;min-width:155px;}
+  .monthly-table tbody td{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-align:right;padding:9px 7px;border-right:1px solid var(--line);}
+  .monthly-table tbody td:first-child{position:sticky;left:0;z-index:2;text-align:left;font-family:'Inter',sans-serif;font-weight:600;min-width:155px;}
+  .monthly-table tr.monthly-group td{background:#1e3327;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;text-align:left;padding:8px 10px;}
+  .monthly-table tr.monthly-cat td:first-child{background:var(--gider-bg);}
+  .monthly-table tr.monthly-cat td{background:var(--gider-bg);}
+  .monthly-table tr.monthly-cat.kredi td:first-child,.monthly-table tr.monthly-cat.kredi td{background:var(--kredi-bg);}
+  .monthly-table td.src-actual{color:var(--gelir);}
+  .monthly-table td.src-budget{color:var(--gold);}
+  .monthly-table td.month-total{font-weight:700;border-left:1px solid var(--gold-dim);}
+  .monthly-table tr.monthly-subtotal td{background:#1e2f26;font-weight:700;color:var(--ink);border-top:1px solid var(--line-strong);}
+  .monthly-table tr.monthly-grand td{background:#20362a;font-weight:700;color:var(--gold);border-top:1px solid var(--gold-dim);}
+
+  .monthly-table tr.monthly-summary td{font-weight:600;}
+  .monthly-table tr.monthly-summary td:first-child{font-family:'Inter',sans-serif;background:#182b22;}
+  .monthly-table tr.monthly-summary.devir-monthly td{background:#182b22;color:var(--gold);font-weight:700;}
+  .monthly-table tr.monthly-summary.income td{background:#182b22;}
+  .monthly-table tr.monthly-summary.gider td{background:var(--gider-bg);}
+  .monthly-table tr.monthly-summary.gider.kredi td{background:var(--kredi-bg);}
+  .monthly-table tr.monthly-summary.total-gider td{background:#1d3026;font-weight:700;border-top:1px solid var(--line-strong);}
+  .monthly-table tr.monthly-summary.net td{background:#20362a;color:var(--gold);font-weight:700;border-top:1px solid var(--gold-dim);}
+
+  .monthly-source{display:block;font-size:7.5px;letter-spacing:.04em;margin-top:2px;opacity:.75;}
 
   /* Report */
   .report-doc{padding:6px 14px 4px;}
@@ -302,6 +348,7 @@
   let deferredPrompt = null;
   let fileHandle = null;
   let viewMode = 'main';
+  let monthlyDashMode = 'gider';
   let dashRange = { start: 0, end: 11 };
   let dashBankMonth = new Date().getMonth();
 
@@ -479,6 +526,7 @@
 
   function render(){
     if(viewMode === 'dashboard'){ renderDashboard(); return; }
+    if(viewMode === 'monthly-dashboard'){ renderMonthlyDashboard(); return; }
     if(viewMode === 'report'){ renderReport(); return; }
     const app = document.getElementById('app');
     const prevGridWrap = document.querySelector('.grid-wrap');
@@ -710,13 +758,15 @@
     const rGelirA = rangeSum(t.gelirActual, s, e);
     const rGiderB = rangeSum(t.giderBudget, s, e);
     const rGiderA = rangeSum(t.giderActual, s, e);
-    const rNetB = rGelirB - rGiderB;
-    const rNetA = rGelirA - rGiderA;
+    const openingBalance = parseTRNumber(ys.startBalance);
+    const rNetB = openingBalance + rGelirB - rGiderB;
+    const rNetA = openingBalance + rGelirA - rGiderA;
     const rFark = rNetA - rNetB;
 
     let html = '';
     html += '<header><p class="eyebrow">Dashboard</p><h1>Dönem Özeti — '+appData.currentYear+'</h1><p class="hint">Seçtiğin ay aralığı için bütçe / gerçekleşen toplamları ve banka bakiye kontrolü.</p></header>';
     html += '<button class="back-btn" id="backBtn">← Ana Ekrana Dön</button>';
+    html += '<div class="dash-btn-row"><button class="dash-btn" id="openMonthlyDashBtn">📅 Aylık Gider Dashboard\'unu Aç</button></div>';
     html += '<div class="dash-btn-row"><button class="dash-btn" id="openReportBtn">📄 Finansal Analiz Raporu Oluştur</button></div>';
 
     html += '<div class="dash-section"><div class="dash-card">';
@@ -740,6 +790,7 @@
     html += '</div>';
 
     html += '<table class="dash-table"><thead><tr><th>Kalem</th><th>Bütçe</th><th>Gerçek</th><th>Fark</th></tr></thead><tbody>';
+    html += '<tr class="devir-summary-row"><td>İlk Devir</td><td>'+fmt(openingBalance)+'</td><td>'+fmt(openingBalance)+'</td><td>+0</td></tr>';
     html += dashTableRow('Gelir', rGelirB, rGelirA, false);
     t.groupTotals.forEach(gt=>{
       const gb = rangeSum(gt.budget, s, e), ga = rangeSum(gt.actual, s, e);
@@ -788,6 +839,169 @@
     const bDisp = isGider ? -b : b;
     const aDisp = isGider ? -a : a;
     return '<tr><td>'+escapeAttr(label)+'</td><td>'+fmt(bDisp)+'</td><td>'+fmt(aDisp)+'</td><td style="color:'+(f>=0?'#4fb286':'#c1553f')+'">'+(f>=0?'+':'')+fmt(f)+'</td></tr>';
+  }
+
+
+  // ---------------- Monthly mixed actual/budget dashboard ----------------
+  function getLastActualMonth(ys){
+    const t = computeTotals(ys);
+    for(let i=11;i>=0;i--){
+      if(t.gelirActual[i] !== 0 || t.giderActual[i] !== 0) return i;
+    }
+    const now = new Date();
+    return appData.currentYear === now.getFullYear() ? now.getMonth() : -1;
+  }
+
+  function mixedMonthValue(row, monthIdx, lastActualMonth){
+    const actual = parseTRNumber(row.months[monthIdx].actual);
+    const budget = parseTRNumber(row.months[monthIdx].budget);
+    if(monthIdx <= lastActualMonth){
+      return { value: actual, source: 'actual' };
+    }
+    return { value: budget, source: 'budget' };
+  }
+
+  function monthlyGroupRows(group, lastActualMonth){
+    return group.rows.map(function(r){
+      const values = [];
+      for(let i=0;i<12;i++) values.push(mixedMonthValue(r,i,lastActualMonth));
+      const total = values.reduce((s,x)=>s+x.value,0);
+      return { row:r, values:values, total:total };
+    });
+  }
+
+  function monthlyCell(v){
+    const cls = v.source === 'actual' ? 'src-actual' : 'src-budget';
+    const label = v.source === 'actual' ? 'G' : 'B';
+    return '<td class="'+cls+'">'+fmt(-v.value)+'<span class="monthly-source">'+label+'</span></td>';
+  }
+
+  function renderMonthlyDashboard(){
+    const app = document.getElementById('app');
+    const ys = yearState();
+    const lastActualMonth = getLastActualMonth(ys);
+    const lastName = lastActualMonth >= 0 ? MONTHS_FULL[lastActualMonth] : 'Henüz gerçekleşen ay yok';
+    const totals = computeTotals(ys);
+
+    // The monthly sheet intentionally mirrors the first Dashboard:
+    // Gelir -> gider groups -> Toplam Gider -> NET.
+    // For every month, use Actual through the last realized month, then Budget.
+    function mixedSeries(budgetArr, actualArr, sign){
+      return budgetArr.map(function(b,i){
+        const useActual = i <= lastActualMonth;
+        return {
+          value: (useActual ? actualArr[i] : budgetArr[i]) * sign,
+          source: useActual ? 'actual' : 'budget'
+        };
+      });
+    }
+
+    const gelir = mixedSeries(totals.gelirBudget, totals.gelirActual, 1);
+    const groups = totals.groupTotals.map(function(g){
+      return {
+        id:g.id,
+        name:g.name,
+        values:mixedSeries(g.budget, g.actual, -1)
+      };
+    });
+
+    const totalGider = MONTHS_FULL.map(function(_,i){
+      return {
+        value: groups.reduce(function(s,g){ return s + g.values[i].value; }, 0),
+        source: i <= lastActualMonth ? 'actual' : 'budget'
+      };
+    });
+
+    const openingBalance = parseTRNumber(ys.startBalance);
+    const devirSeries = [];
+    const net = [];
+    let runningBalance = openingBalance;
+
+    MONTHS_FULL.forEach(function(_,i){
+      const opening = runningBalance;
+      const closing = opening + gelir[i].value + totalGider[i].value;
+      devirSeries.push({
+        value: opening,
+        source: i <= lastActualMonth ? 'actual' : 'budget'
+      });
+      net.push({
+        value: closing,
+        source: i <= lastActualMonth ? 'actual' : 'budget'
+      });
+      runningBalance = closing;
+    });
+
+    function cell(v, extraClass){
+      const cls = (v.source === 'actual' ? 'src-actual' : 'src-budget') + (extraClass ? ' '+extraClass : '');
+      const label = v.source === 'actual' ? 'G' : 'B';
+      return '<td class="'+cls+'">'+fmt(v.value)+'<span class="monthly-source">'+label+'</span></td>';
+    }
+
+    function totalOf(series){
+      return series.reduce(function(s,v){ return s + v.value; }, 0);
+    }
+
+    let html = '';
+    html += '<header><p class="eyebrow">Dashboard</p><h1>Aylık Gider Dashboard — '+appData.currentYear+'</h1>';
+    html += '<p class="hint">İlk Dashboard\'daki gruplandırmanın aylık görünümü. Gerçekleşen döneme kadar GERÇEKLEŞEN, sonraki aylar BÜTÇE kullanılır.</p></header>';
+    html += '<button class="back-btn" id="backFromMonthlyBtn">← Dashboard\'a Dön</button>';
+
+    html += '<div class="monthly-wrap">';
+    html += '<div class="dash-card">';
+    html += '<div class="monthly-devir"><div><div class="label">İLK DEVİR</div><div class="devir-hint">'+appData.currentYear+' yılına devreden başlangıç bakiyesi</div></div><div class="value">'+fmt(parseTRNumber(ys.startBalance))+' ₺</div></div>';
+    html += '<h3>Aylık Karşılaştırma</h3>';
+    html += '<p class="monthly-note">Son gerçekleşen ay: <b>'+escapeAttr(lastName)+'</b>. Her hücrenin altındaki <b>G</b> gerçekleşeni, <b>B</b> bütçeyi gösterir.</p>';
+    html += '<div class="monthly-legend"><span class="monthly-pill actual">G = Gerçekleşen</span><span class="monthly-pill budget">B = Bütçe</span></div>';
+
+    html += '<div class="monthly-table-wrap"><table class="monthly-table"><thead><tr>';
+    html += '<th>KALEM</th>';
+    MONTHS_FULL.forEach(function(m){ html += '<th>'+m+'</th>'; });
+    html += '<th>YILLIK</th></tr></thead><tbody>';
+
+    // Rolling devir: January starts with the initial devir;
+    // each following month starts with the previous month's closing balance.
+    html += '<tr class="monthly-summary devir-monthly"><td>Devir / Başlangıç</td>';
+    devirSeries.forEach(function(v){ html += cell(v); });
+    html += '<td class="month-total">'+fmt(openingBalance)+'</td></tr>';
+
+    // Gelir — same first-level row as the original Dashboard.
+    html += '<tr class="monthly-summary income"><td>Gelir</td>';
+    gelir.forEach(function(v){ html += cell(v); });
+    html += '<td class="month-total">'+fmt(totalOf(gelir))+'</td></tr>';
+
+    // Gider groups — same grouping as the original Dashboard.
+    groups.forEach(function(g){
+      const cls = g.id === 'kredi' ? ' kredi' : '';
+      html += '<tr class="monthly-summary gider'+cls+'"><td>'+escapeAttr(g.name)+'</td>';
+      g.values.forEach(function(v){ html += cell(v); });
+      html += '<td class="month-total">'+fmt(totalOf(g.values))+'</td></tr>';
+    });
+
+    // Total Gider.
+    html += '<tr class="monthly-summary total-gider"><td>Toplam Gider</td>';
+    totalGider.forEach(function(v){ html += cell(v); });
+    html += '<td class="month-total">'+fmt(totalOf(totalGider))+'</td></tr>';
+
+    // Net.
+    html += '<tr class="monthly-summary net"><td>NET</td>';
+    net.forEach(function(v){ html += cell(v); });
+    html += '<td class="month-total">'+fmt(totalOf(net))+'</td></tr>';
+
+    html += '</tbody></table></div>';
+
+    if(lastActualMonth >= 0){
+      html += '<p class="monthly-note">Devir zinciri: Ocak başlangıcı ilk devirdir; her ayın kapanış bakiyesi bir sonraki ayın başlangıç/devir bakiyesi olur. '+MONTHS_FULL.slice(0,lastActualMonth+1).join(', ')+' gerçekleşen, '+(lastActualMonth < 11 ? MONTHS_FULL.slice(lastActualMonth+1).join(', ')+' bütçe olarak alınmıştır.' : 'yılın tamamı gerçekleşen olarak alınmıştır.')+'</p>';
+    }else{
+      html += '<p class="monthly-note">Henüz gerçekleşen veri bulunmadığı için tüm aylar bütçeden gösteriliyor.</p>';
+    }
+
+    html += '</div></div>';
+    app.innerHTML = html;
+
+    document.getElementById('backFromMonthlyBtn').onclick = function(){
+      viewMode = 'dashboard';
+      render();
+    };
   }
 
   // ---------------- Report engine ----------------
@@ -1041,6 +1255,7 @@
 
   function attachDashboardHandlers(){
     document.getElementById('backBtn').onclick = ()=>{ viewMode='main'; render(); };
+    document.getElementById('openMonthlyDashBtn').onclick = ()=>{ viewMode='monthly-dashboard'; render(); };
     document.getElementById('openReportBtn').onclick = ()=>{ viewMode='report'; render(); };
     document.getElementById('rangeStart').onchange = (e)=>{ dashRange.start = parseInt(e.target.value,10); if(dashRange.start>dashRange.end) dashRange.end=dashRange.start; render(); };
     document.getElementById('rangeEnd').onchange = (e)=>{ dashRange.end = parseInt(e.target.value,10); if(dashRange.end<dashRange.start) dashRange.start=dashRange.end; render(); };
