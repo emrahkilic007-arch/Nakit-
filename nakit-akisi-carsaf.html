@@ -53,6 +53,11 @@
   .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-dim); margin:0 0 4px;}
   h1{font-family:'Fraunces',serif; font-weight:700; font-size:22px; margin:0 0 4px; letter-spacing:-.01em;}
   .hint{font-size:11.5px; color:var(--ink-faint); margin:0; line-height:1.5;}
+  .explain-box{
+    margin-top:12px; padding:12px 14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px;
+  }
+  .explain-box p{font-size:12px; line-height:1.55; color:var(--ink-dim); margin:0 0 10px;}
+  .explain-box p:last-child{margin-bottom:0;}
 
   .year-bar{display:flex; align-items:center; gap:8px; padding:12px 14px 6px;}
   .year-scroll{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; flex:1;}
@@ -141,6 +146,8 @@
   tr.gider-row td{background:var(--gider-bg);}
   tr.gider-row.group-kredi td.sticky-col{background:var(--kredi-bg);}
   tr.gider-row.group-kredi td{background:var(--kredi-bg);}
+  tr.gelir-row.group-kredi td.sticky-col{background:var(--kredi-bg);}
+  tr.gelir-row.group-kredi td{background:var(--kredi-bg);}
 
   td.cell-filled{background:var(--filled) !important;}
 
@@ -255,6 +262,22 @@
     margin:14px 14px 0; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700;
     text-transform:uppercase; letter-spacing:.08em; color:var(--gold-dim);
   }
+  .cash-picker-card{
+    margin:14px 14px 4px; padding:14px; border-radius:12px;
+    background:linear-gradient(135deg,#2a4a37,#1c3327); border:1px solid var(--gelir);
+  }
+  .cash-picker-row{display:flex; flex-direction:column; gap:5px; margin-bottom:10px;}
+  .cash-picker-row label{font-size:11px; color:var(--ink-dim); font-family:'IBM Plex Mono',monospace;}
+  .cash-picker-row select{
+    background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:9px 10px;
+    color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;
+  }
+  .cash-picker-row select option{background:var(--paper-raised); color:var(--ink);}
+  .cash-picker-result{display:flex; justify-content:space-between; align-items:center;}
+  .cash-picker-result span{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-dim);}
+  .cash-picker-result b{font-family:'IBM Plex Mono',monospace; font-size:17px;}
+  .cash-picker-result b.pos{color:var(--gelir);} .cash-picker-result b.neg{color:var(--gider);}
+
   .scard{flex:none; min-width:130px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
   .scard-label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:6px;}
   .scard-val{font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:700;}
@@ -283,6 +306,13 @@
   .dash-table td{text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 4px; border-bottom:1px solid var(--line);}
   .dash-table td:first-child{text-align:left; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;}
   .dash-table tr.grand td{font-weight:700; border-top:1px solid var(--gold-dim); color:var(--gold);}
+
+  .month-cash-strip{
+    display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:9px 13px;
+    background:linear-gradient(135deg,#2a4a37,#1c3327); border:1px solid var(--gelir); border-radius:9px;
+  }
+  .month-cash-strip span{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim);}
+  .month-cash-strip b{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--gelir);}
 
   .recon-input{width:100%; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:10px 12px; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; margin-top:4px;}
   .recon-input:focus{outline:1px solid var(--gold-dim);}
@@ -327,6 +357,7 @@
   let viewMode = 'main';
   let dashRange = { start: 0, end: 11 };
   let dashBankMonth = new Date().getMonth();
+  let mainCashMonth = null;
 
   window.addEventListener('beforeinstallprompt', (e)=>{
     e.preventDefault();
@@ -345,8 +376,11 @@
     return {
       startBalance: 0,
       bankCheck: {},
-      gelir: [
-        mkRow("Maaş"), mkRow("Müzik / Telif"), mkRow("Sponsorluk"), mkRow("Freelance"), mkRow("Diğer Gelir")
+      gelirGroups: [
+        { id:'genel', name:'Genel Gelir', rows:[
+          mkRow("Maaş"), mkRow("Müzik / Telif"), mkRow("Sponsorluk"), mkRow("Freelance"), mkRow("Diğer Gelir")
+        ]},
+        { id:'krediler', name:'Krediler', rows:[] }
       ],
       giderGroups: [
         { id:'nakit', name:'Nakit Giderler', rows:[
@@ -355,7 +389,8 @@
         ]},
         { id:'kredi', name:'Kredi Kartı', rows:[
           mkRow("Kredi Kartı 1")
-        ]}
+        ]},
+        { id:'krediler', name:'Krediler', rows:[] }
       ]
     };
   }
@@ -390,7 +425,15 @@
   }
 
   function migrateYearState(parsed){
-    if(!parsed || !Array.isArray(parsed.gelir)) return null;
+    if(!parsed) return null;
+    if(Array.isArray(parsed.gelir) && !parsed.gelirGroups){
+      parsed.gelirGroups = [
+        { id:'genel', name:'Genel Gelir', rows: parsed.gelir },
+        { id:'krediler', name:'Krediler', rows: [] }
+      ];
+      delete parsed.gelir;
+    }
+    if(!Array.isArray(parsed.gelirGroups)) return null;
     if(Array.isArray(parsed.gider) && !parsed.giderGroups){
       parsed.giderGroups = [
         { id:'nakit', name:'Nakit Giderler', rows: parsed.gider },
@@ -399,6 +442,12 @@
       delete parsed.gider;
     }
     if(!Array.isArray(parsed.giderGroups)) return null;
+    if(!parsed.giderGroups.find(g=>g.id==='krediler')){
+      parsed.giderGroups.push({ id:'krediler', name:'Krediler', rows: [] });
+    }
+    if(!parsed.gelirGroups.find(g=>g.id==='krediler')){
+      parsed.gelirGroups.push({ id:'krediler', name:'Krediler', rows: [] });
+    }
     if(typeof parsed.startBalance !== 'number') parsed.startBalance = parseTRNumber(parsed.startBalance);
     if(!parsed.bankCheck || typeof parsed.bankCheck !== 'object') parsed.bankCheck = {};
     return parsed;
@@ -468,7 +517,13 @@
   }
 
   function computeTotals(ys){
-    const gelirT = sumRows(ys.gelir);
+    const gelirGroupTotals = ys.gelirGroups.map(g => ({ id:g.id, name:g.name, ...sumRows(g.rows) }));
+    const gelirBudget = new Array(12).fill(0);
+    const gelirActual = new Array(12).fill(0);
+    gelirGroupTotals.forEach(gt=>{
+      gt.budget.forEach((v,i)=> gelirBudget[i]+=v);
+      gt.actual.forEach((v,i)=> gelirActual[i]+=v);
+    });
     const groupTotals = ys.giderGroups.map(g => ({ id:g.id, name:g.name, ...sumRows(g.rows) }));
     const giderBudget = new Array(12).fill(0);
     const giderActual = new Array(12).fill(0);
@@ -476,8 +531,8 @@
       gt.budget.forEach((v,i)=> giderBudget[i]+=v);
       gt.actual.forEach((v,i)=> giderActual[i]+=v);
     });
-    const netBudget = gelirT.budget.map((g,i)=> g - giderBudget[i]);
-    const netActual = gelirT.actual.map((g,i)=> g - giderActual[i]);
+    const netBudget = gelirBudget.map((g,i)=> g - giderBudget[i]);
+    const netActual = gelirActual.map((g,i)=> g - giderActual[i]);
     const netFark = netActual.map((n,i)=> n - netBudget[i]);
     const devir = [];
     netActual.forEach((n,i)=>{
@@ -489,7 +544,7 @@
       const prev = i===0 ? parseTRNumber(ys.startBalance) : devirBudget[i-1];
       devirBudget.push(prev + n);
     });
-    return { gelirBudget:gelirT.budget, gelirActual:gelirT.actual, groupTotals, giderBudget, giderActual, netBudget, netActual, netFark, devir, devirBudget };
+    return { gelirBudget, gelirActual, gelirGroupTotals, groupTotals, giderBudget, giderActual, netBudget, netActual, netFark, devir, devirBudget };
   }
 
   function computeBlendedCash(ys, t){
@@ -546,7 +601,11 @@
     const relFark = t.netFark[relevantMonthIdx];
 
     let html = '';
-    html += '<header><p class="eyebrow">Manuel Çarşaf Rapor</p><h1>Nakit Akışı Tablosu</h1><p class="hint">Bir aya Bütçe girdiğinde o aydan itibaren sonraki aylara otomatik dağıtılır, istediğin ayı sonradan değiştirebilirsin.<br><br><b style="color:var(--gelir);">"AY SONU NAKDİM"</b> satırı en kolay okunacak satırdır: geçmiş aylarda gerçek rakamları, henüz gelmemiş aylarda bütçe rakamlarını kullanarak "o ay sonunda elimde ne kalır" sorusunu tek bir sayıyla cevaplar.</p></header>';
+    html += '<header><p class="eyebrow">Manuel Çarşaf Rapor</p><h1>Nakit Akışı Tablosu</h1><p class="hint">Bir aya Bütçe girdiğinde o aydan itibaren sonraki aylara otomatik dağıtılır, istediğin ayı sonradan değiştirebilirsin.</p>'
+      + '<div class="explain-box">'
+      + '<p><b style="color:var(--gelir);">🟢 AY SONU NAKDİM</b> (en alttaki yeşil satır) — <b>bu asıl cevap.</b> Her ay için: o ay geçtiyse gerçekleşen rakamı, henüz gelmediyse bütçedeki planı kullanır. "Bu ay sonunda cebimde ne kalır?" sorusunun tek ve net cevabı budur.</p>'
+      + '<p><b style="color:var(--gold);">⚪ REFERANS (2 uç senaryo)</b> — sadece merak edenler için iki teorik uç durumu gösterir: <i>"hep bütçe gibi gitseydi"</i> ve <i>"bundan sonra hiçbir şey olmasaydı"</i>. Bu ikisi normalde AY SONU NAKDİM\'den farklı çıkar, bu bir hata değildir — farklı sorulara cevap verirler. Karışıklık yaratıyorsa bu satırı yok sayabilir, sadece yeşil satıra bakabilirsin.</p>'
+      + '</div></header>';
 
     const years = Object.keys(appData.years).map(y=>parseInt(y,10)).sort((a,b)=>a-b);
     html += '<div class="year-bar"><div class="year-scroll">';
@@ -593,6 +652,16 @@
       html += '<p class="hint" style="padding:0 14px 6px;">Not: Gerçekleşen Net ile '+relMonthName+' Gerçek Net aynı görünüyor çünkü bu yıl için şu ana kadar sadece '+relMonthName+' ayında gerçekleşen veri girildi.</p>';
     }
 
+    if(mainCashMonth === null) mainCashMonth = relevantMonthIdx;
+    const mcIsFuture = mainCashMonth > relevantMonthIdx;
+    const mcCash = blended[mainCashMonth];
+    html += '<div class="cash-picker-card">';
+    html += '<div class="cash-picker-row"><label>Hangi ayın sonunda elimde ne kalır?</label><select id="mainCashMonthSelect">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===mainCashMonth?' selected':'')+'>'+m+'</option>');
+    html += '</select></div>';
+    html += '<div class="cash-picker-result"><span>'+MONTHS_FULL[mainCashMonth]+' Sonu Nakdim'+(mcIsFuture?' <b class="blend-tag" style="margin-left:4px;">tahmini</b>':'')+'</span><b class="'+(mcCash>=0?'pos':'neg')+'">'+(mcCash>=0?'+':'')+fmt(mcCash)+' ₺</b></div>';
+    html += '</div>';
+
     html += '<div class="swipe-note">→ Tüm ayları görmek için tabloyu yana kaydırın. Doldurulan "Gerçek" hücreleri o ay için yeşile boyanır.</div>';
 
     html += '<div class="grid-wrap"><table>';
@@ -607,16 +676,21 @@
     html += '</thead><tbody>';
 
     html += '<tr class="section-row"><td class="sticky-col" colspan="40">GELİR</td></tr>';
-    ys.gelir.forEach((r,idx)=> html += renderRow(r, idx, 'gelir', null));
-    html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gelir">+ Gelir Kategorisi Ekle</button></td></tr>';
+    ys.gelirGroups.forEach(group=>{
+      html += '<tr class="subsection-row'+(group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
+      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gelir', group.id));
+      html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gelir" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
+      const gtg = sumRows(group.rows);
+      html += subtotalRowHtml(group.name+' Toplamı', gtg.budget, gtg.actual, false);
+    });
 
     html += '<tr class="section-row"><td class="sticky-col" colspan="40">GİDER</td></tr>';
     ys.giderGroups.forEach(group=>{
-      html += '<tr class="subsection-row'+(group.id==='kredi'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
+      html += '<tr class="subsection-row'+(group.id==='kredi'||group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
       group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gider', group.id));
       html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gider" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
       const gt = sumRows(group.rows);
-      html += subtotalRowHtml(group.name+' Toplamı', gt.budget, gt.actual);
+      html += subtotalRowHtml(group.name+' Toplamı', gt.budget, gt.actual, true);
     });
 
     html += totalRow('TOPLAM GELİR', t.gelirBudget, t.gelirActual, yGelirB, yGelirA, 'gelir-c', false);
@@ -645,7 +719,7 @@
   function renderRow(r, idx, type, groupId){
     const tot = rowTotals(r);
     const isGider = (type === 'gider');
-    const rowCls = type+'-row'+(groupId==='kredi' ? ' group-kredi' : '');
+    const rowCls = type+'-row'+((groupId==='kredi'||groupId==='krediler') ? ' group-kredi' : '');
     let html = '<tr class="'+rowCls+'" data-type="'+type+'" data-idx="'+idx+'"'+(groupId?(' data-group="'+groupId+'"'):'')+'>';
     html += '<td class="sticky-col"><div class="sticky-col-inner"><button class="del-btn-inline" data-del="'+type+'" data-delidx="'+idx+'"'+(groupId?(' data-delgroup="'+groupId+'"'):'')+' title="Kategoriyi sil">✕</button><input class="cat-input" value="'+escapeAttr(r.name)+'" data-field="name"></div></td>';
     for(let i=0;i<12;i++){
@@ -671,19 +745,23 @@
     return html;
   }
 
-  function subtotalRowHtml(label, budgetArr, actualArr){
+  function subtotalRowHtml(label, budgetArr, actualArr, isGider){
     let html = '<tr class="subtotal-row"><td class="sticky-col">'+escapeAttr(label)+'</td>';
     let yb=0, ya=0;
     for(let i=0;i<12;i++){
-      const f = budgetArr[i]-actualArr[i];
+      const f = isGider ? (budgetArr[i]-actualArr[i]) : (actualArr[i]-budgetArr[i]);
       yb += budgetArr[i]; ya += actualArr[i];
-      html += '<td class="readonly-cell">'+fmt(-budgetArr[i])+'</td>';
-      html += '<td class="readonly-cell">'+fmt(-actualArr[i])+'</td>';
+      const bDisp = isGider ? -budgetArr[i] : budgetArr[i];
+      const aDisp = isGider ? -actualArr[i] : actualArr[i];
+      html += '<td class="readonly-cell">'+fmt(bDisp)+'</td>';
+      html += '<td class="readonly-cell">'+fmt(aDisp)+'</td>';
       html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
     }
-    const yf = yb-ya;
-    html += '<td class="readonly-cell">'+fmt(-yb)+'</td>';
-    html += '<td class="readonly-cell">'+fmt(-ya)+'</td>';
+    const yf = isGider ? (yb-ya) : (ya-yb);
+    const ybDisp = isGider ? -yb : yb;
+    const yaDisp = isGider ? -ya : ya;
+    html += '<td class="readonly-cell">'+fmt(ybDisp)+'</td>';
+    html += '<td class="readonly-cell">'+fmt(yaDisp)+'</td>';
     html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     html += '</tr>';
     return html;
@@ -735,7 +813,7 @@
   }
 
   function devirRowHtml(devirBudget, devirActual){
-    let html = '<tr class="devir-row"><td class="sticky-col">DEVREDEN BAKİYE</td>';
+    let html = '<tr class="devir-row"><td class="sticky-col">REFERANS<br><span class="blend-sub">(2 uç senaryo)</span></td>';
     for(let i=0;i<12;i++){
       const b = devirBudget[i], a = devirActual[i], f = a-b;
       html += '<td class="readonly-cell">'+(b>=0?'+':'')+fmt(b)+'</td>';
@@ -754,8 +832,12 @@
     return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   }
 
+  function findGroup(ys, type, groupId){
+    const groups = type === 'gelir' ? ys.gelirGroups : ys.giderGroups;
+    return groups.find(g=> g.id === groupId);
+  }
   function findGiderGroup(ys, groupId){
-    return ys.giderGroups.find(g=> g.id === groupId);
+    return findGroup(ys, 'gider', groupId);
   }
 
   // ---------------- Dashboard ----------------
@@ -808,7 +890,11 @@
 
     html += '<p class="hint" style="padding:4px 2px 8px;">Not: "Bütçe" seçtiğin aralığın tamamını kapsar, "Gerçek" ise sadece o aralıkta veri girdiğin ayları — aradaki fark ("Fark" sütunu) bu yüzden henüz gelmemiş ayları da içerir, tek başına bir başarısızlık göstergesi değildir.</p>';
     html += '<table class="dash-table"><thead><tr><th>Kalem</th><th>Bütçe</th><th>Gerçek</th><th>Fark</th></tr></thead><tbody>';
-    html += dashTableRow('Gelir', rGelirB, rGelirA, false);
+    t.gelirGroupTotals.forEach(gt=>{
+      const gb = rangeSum(gt.budget, s, e), ga = rangeSum(gt.actual, s, e);
+      html += dashTableRow(gt.name, gb, ga, false);
+    });
+    html += dashTableRow('Toplam Gelir', rGelirB, rGelirA, false);
     t.groupTotals.forEach(gt=>{
       const gb = rangeSum(gt.budget, s, e), ga = rangeSum(gt.actual, s, e);
       html += dashTableRow(gt.name, gb, ga, true);
@@ -817,14 +903,15 @@
     html += '<tr class="grand"><td>NET</td><td>'+fmt(rNetB)+'</td><td>'+fmt(rNetA)+'</td><td class="'+(rFark>=0?'':'')+'" style="color:'+(rFark>=0?'#4fb286':'#c1553f')+'">'+(rFark>=0?'+':'')+fmt(rFark)+'</td></tr>';
     html += '</tbody></table>';
 
-    html += '<h3 style="margin-top:20px;">Ay Bazında Net Elde Kalan</h3>';
-    html += '<table class="dash-table"><thead><tr><th>Ay</th><th>Bütçe Devir</th><th>Gerçek/Tahmini Devir</th><th>Fark</th></tr></thead><tbody>';
+    html += '<h3 style="margin-top:20px;">Ay Bazında Elimde Ne Kalır?</h3>';
+    html += '<p class="hint" style="padding:0 0 8px;"><b style="color:var(--gelir);">"Gerçek/Tahmini"</b> sütunu asıl cevaptır (ana ekrandaki "AY SONU NAKDİM" ile aynı). <b style="color:var(--gold-dim);">"Sadece Bütçeydi"</b> sütunu ise sadece referans için: "hep plan gibi gitseydi ne olurdu" senaryosu.</p>';
+    html += '<table class="dash-table"><thead><tr><th>Ay</th><th>Sadece Bütçeydi</th><th>Gerçek/Tahmini</th><th>Fark</th></tr></thead><tbody>';
     for(let mi=s; mi<=e; mi++){
       const mb = t.devirBudget[mi];
       const ma = rangeBlendInfo.blended[mi];
       const mf = ma - mb;
       const isFut = mi > rangeBlendInfo.relevantMonthIdx;
-      html += '<tr'+(mi===e?' class="grand"':'')+'><td>'+MONTHS_FULL[mi]+(isFut?' <span style="font-size:9px; color:var(--gold-dim);">(tahmini)</span>':'')+'</td><td>'+fmt(mb)+'</td><td>'+fmt(ma)+'</td><td style="color:'+(mf>=0?'#4fb286':'#c1553f')+'">'+(mf>=0?'+':'')+fmt(mf)+'</td></tr>';
+      html += '<tr'+(mi===e?' class="grand"':'')+'><td>'+MONTHS_FULL[mi]+(isFut?' <span style="font-size:9px; color:var(--gold-dim);">(tahmini)</span>':'')+'</td><td style="color:var(--ink-faint);">'+fmt(mb)+'</td><td style="color:var(--gelir); font-weight:700;">'+fmt(ma)+'</td><td style="color:'+(mf>=0?'#4fb286':'#c1553f')+'">'+(mf>=0?'+':'')+fmt(mf)+'</td></tr>';
     }
     html += '</tbody></table>';
     html += '</div>';
@@ -920,24 +1007,18 @@
     const incSapma = incB!==0 ? ((incA-incB)/Math.abs(incB)*100) : null;
     const expSapma = expB!==0 ? ((expA-expB)/Math.abs(expB)*100) : null;
 
-    // ---- Budget-plan based projection for the remaining (not-yet-realized) months ----
-    let remainingBudgetNet = 0, projectedYearEnd_budget = null, monthsToNegative_budget = null;
-    const remainingMonthDetail = [];
-    if(remainingMonths > 0){
-      let runningDevir = currentDevir;
-      for(let i=lastActive+1;i<=11;i++){
-        const monthNet = t.gelirBudget[i] - t.giderBudget[i];
-        remainingBudgetNet += monthNet;
-        runningDevir += monthNet;
-        remainingMonthDetail.push({ idx:i, net: monthNet, devir: runningDevir });
-        if(monthsToNegative_budget === null && runningDevir < 0){
-          monthsToNegative_budget = i - lastActive;
-        }
+    // ---- "Ay Sonu Nakdim" projection — SAME function used on the main screen and Dashboard, so the number always matches everywhere ----
+    const blendedInfo = computeBlendedCash(ys, t);
+    const blended = blendedInfo.blended;
+    let monthsToNegative_budget = null;
+    for(let i=lastActive+1;i<=11;i++){
+      if(monthsToNegative_budget === null && blended[i] < 0){
+        monthsToNegative_budget = i - lastActive;
       }
-      projectedYearEnd_budget = currentDevir + remainingBudgetNet;
     }
+    const projectedYearEnd_budget = blended[11];
     let projectionDivergence = null;
-    if(projectedYearEnd_budget !== null){
+    if(remainingMonths > 0){
       const base = Math.max(Math.abs(projectedYearEnd), Math.abs(projectedYearEnd_budget), 1);
       projectionDivergence = Math.abs(projectedYearEnd - projectedYearEnd_budget) / base * 100;
     }
@@ -946,7 +1027,7 @@
       hasData:true, activeCount, lastActive, incB, incA, expB, expA, netA, netB,
       groupToDate, krediOran, currentDevir, avgNet, recentAvg, recentCount, remainingMonths,
       projectedYearEnd, monthsToNegative, incSapma, expSapma,
-      remainingBudgetNet, projectedYearEnd_budget, monthsToNegative_budget, remainingMonthDetail, projectionDivergence,
+      projectedYearEnd_budget, monthsToNegative_budget, projectionDivergence,
       startBalance: parseTRNumber(ys.startBalance)
     };
   }
@@ -1044,26 +1125,18 @@
     const riskFlag_trend = a.monthsToNegative && a.monthsToNegative<=a.remainingMonths;
     const riskFlag_budget = a.monthsToNegative_budget !== null;
     html += '<div class="report-card'+((riskFlag_trend||riskFlag_budget)?' warn':'')+'">';
-    html += '<h3>Yıl Sonu Öngörüsü — Trend ve Bütçe Bazlı</h3>';
+    html += '<h3>Yıl Sonu Nakdim — Ne Kalır?</h3>';
     if(a.remainingMonths > 0){
-      html += '<p>Kalan '+a.remainingMonths+' ay için iki farklı yöntemle öngörü yapılabilir:</p>';
-      html += '<p><b>1) Trend bazlı:</b> Son '+a.recentCount+' ayın gerçekleşen ortalaması ('+fmt(a.recentAvg)+' ₺/ay net) aynen devam ederse, yıl sonunda eldeki nakit yaklaşık <b>'+fmt(a.projectedYearEnd)+' ₺</b> olur.</p>';
-      html += '<p><b>2) Bütçe planına göre:</b> Kalan aylar için zaten '+MONTHS_FULL[a.lastActive+1]+'\'dan itibaren girilmiş olan bütçe rakamları esas alınırsa (planlanan net '+fmt(a.remainingBudgetNet)+' ₺), yıl sonu bakiyesi yaklaşık <b>'+fmt(a.projectedYearEnd_budget)+' ₺</b> olarak öngörülüyor.</p>';
+      html += '<p>Şu anda ('+lastMonthName+' sonu itibarıyla) elinizde <b>'+fmt(a.currentDevir)+' ₺</b> var. Kalan '+a.remainingMonths+' ay için girdiğiniz bütçe planı aynen gerçekleşirse, '+appData.currentYear+' yılı sonunda elinizde yaklaşık <b style="font-size:1.15em;">'+fmt(a.projectedYearEnd_budget)+' ₺</b> kalır. (Bu rakam, ana ekrandaki ve Dashboard\'daki "Ay Sonu Nakdim" satırıyla birebir aynıdır.)</p>';
 
-      if(a.projectionDivergence !== null && a.projectionDivergence > 25){
-        html += '<p>İki öngörü arasında belirgin bir fark var (yaklaşık %'+fmt(a.projectionDivergence)+'). Bu, ya bütçe planının biraz iyimser/kötümser kurgulandığını ya da son dönemdeki gerçekleşen performansın bütçeden saptığını gösteriyor — bütçenizi gözden geçirmekte fayda olabilir.</p>';
-      }
-
-      if(riskFlag_trend){
-        html += '<p>Trend eğilimi aynı şekilde sürerse, yaklaşık <b>'+a.monthsToNegative+' ay içinde</b> nakit bakiyenizin eksiye dönmesi olası görünüyor.</p>';
-      }
       if(riskFlag_budget){
-        html += '<p>Girilmiş bütçe planına göre bile, yaklaşık <b>'+a.monthsToNegative_budget+' ay sonra ('+MONTHS_FULL[a.lastActive+a.monthsToNegative_budget]+')</b> nakit bakiyenizin eksiye dönmesi bekleniyor — bu, plandan kaynaklanan bilinen bir risk.</p>';
+        html += '<p>Girdiğiniz bütçe planına göre, yaklaşık <b>'+a.monthsToNegative_budget+' ay sonra ('+MONTHS_FULL[a.lastActive+a.monthsToNegative_budget]+')</b> nakit bakiyenizin eksiye dönmesi bekleniyor. Bu, önceden bir kredi limiti veya ek finansman ayarlamanız gerekebileceği anlamına gelir.</p>';
       }
-      if(riskFlag_trend || riskFlag_budget){
-        html += '<p>Bu ihtimale karşı önceden bir kredi limiti, ek finansman veya nakit desteği ayarlamanız faydalı olur.</p>';
-      } else if(a.projectedYearEnd < 0 || a.projectedYearEnd_budget < 0){
-        html += '<p>Her iki öngörüde de yıl sonu bakiyesi zayıf görünüyor; gider tarafında kısa vadede önlem almanız önerilir.</p>';
+
+      html += '<p style="color:var(--ink-faint); font-size:12px;">Alternatif bir bakış: bütçe planını hiç dikkate almadan, sadece son '+a.recentCount+' ayın ortalama performansı ('+fmt(a.recentAvg)+' ₺/ay) aynen devam etseydi, yıl sonu yaklaşık <b>'+fmt(a.projectedYearEnd)+' ₺</b> olurdu. Bu sadece geçmişe bakan kaba bir tahmindir, bütçe planınızı içermez — yukarıdaki bütçe bazlı rakam daha güvenilirdir.</p>';
+
+      if(riskFlag_trend && !riskFlag_budget){
+        html += '<p>Not: Sadece geçmiş performansa bakılırsa yaklaşık '+a.monthsToNegative+' ay içinde nakit sıkışıklığı riski görünüyor, ama bütçe planınıza göre bu risk şu an için düşük — planınıza sadık kalmaya devam edin.</p>';
       }
     } else {
       html += '<p>Yılın tüm ayları için veri girilmiş durumda, ek bir projeksiyona gerek yok. '+appData.currentYear+' yılı fiilen <b>'+fmt(a.currentDevir)+' ₺</b> devreden bakiye ile tamamlandı.</p>';
@@ -1121,7 +1194,7 @@
     }
   }
 
-  // ---------------- Dashboard: category x month blended çarşaf report ----------------
+  // ---------------- Dashboard: category x month blended çarşaf report (side-by-side) ----------------
   function blendedRowValues(r, relevantMonthIdx){
     return r.months.map((m,i)=> (i<=relevantMonthIdx) ? parseTRNumber(m.actual) : parseTRNumber(m.budget));
   }
@@ -1167,7 +1240,7 @@
   }
 
   function sheetCashRow(blended, isFuture12){
-    let html = '<tr class="blend-row"><td class="sticky-col">AY SONU NAKDİM</td>';
+    let html = '<tr class="blend-row"><td class="sticky-col">ELDE KALAN NAKİT</td>';
     blended.forEach((v,i)=>{
       const tag = isFuture12[i] ? ' <span class="blend-tag">tahmini</span>' : '';
       html += '<td class="readonly-cell blend-cell'+(isFuture12[i]?' blend-future':'')+'">'+(v>=0?'+':'')+fmt(v)+tag+'</td>';
@@ -1186,36 +1259,37 @@
     for(let i=0;i<12;i++) isFuture12.push(i>relevantMonthIdx);
 
     let html = '';
-    html += '<header><p class="eyebrow">Dashboard</p><h1>Kategori Bazlı Aylık Çarşaf</h1><p class="hint">Her kategori için: geçmiş (gerçekleşen) aylarda gerçek rakam, henüz gelmeyen aylarda bütçe rakamı gösterilir — tek satırda, tüm yıl.</p></header>';
+    html += '<header><p class="eyebrow">Dashboard</p><h1>Kalem Bazlı Aylık Çarşaf</h1><p class="hint">Dashboard\'daki Kalem tablosuyla aynı satırlar (Genel Gelir, Krediler, Nakit Giderler, Kredi Kartı...), tek farkla: burada her ay yan yana. Her hücrede tek rakam — gerçekleşen ay varsa gerçek, yoksa bütçe. En dipte, aydan aya toplana toplana giden "Elde Kalan Nakit" var.</p></header>';
     html += '<button class="back-btn" id="backToDashFromSheetBtn">← Dashboard\'a Dön</button>';
 
-    html += '<div class="swipe-note">→ Tüm ayları görmek için tabloyu yana kaydırın. Açık renkli hücreler henüz gelmemiş (bütçeden alınan) aylardır.</div>';
+    html += '<div class="swipe-note">→ Tüm ayları görmek için tabloyu yana kaydırın. Açık/italik hücreler henüz gelmemiş (bütçeden alınan) aylardır.</div>';
 
     html += '<div class="grid-wrap"><table>';
-    html += '<thead><tr class="month-header"><th class="sticky-col">Kategori</th>';
+    html += '<thead><tr class="month-header"><th class="sticky-col">Kalem</th>';
     MONTHS.forEach((m,i)=> html += '<th'+(isFuture12[i]?' style="color:var(--gold-dim);"':'')+'>'+m+'</th>');
     html += '<th>Yıllık<br>Toplam</th></tr></thead><tbody>';
 
     html += '<tr class="section-row"><td class="sticky-col" colspan="14">GELİR</td></tr>';
     const gelirTotals = new Array(12).fill(0);
-    ys.gelir.forEach(r=>{
-      const vals = blendedRowValues(r, relevantMonthIdx);
-      vals.forEach((v,i)=> gelirTotals[i]+=v);
-      html += sheetRow(r.name, vals, false, isFuture12);
+    ys.gelirGroups.forEach(group=>{
+      const gGroupTotals = new Array(12).fill(0);
+      group.rows.forEach(r=>{
+        const vals = blendedRowValues(r, relevantMonthIdx);
+        vals.forEach((v,i)=>{ gGroupTotals[i]+=v; gelirTotals[i]+=v; });
+      });
+      html += sheetTotalRow(group.name, gGroupTotals, false, isFuture12, 'gelir-c');
     });
     html += sheetTotalRow('TOPLAM GELİR', gelirTotals, false, isFuture12, 'gelir-c');
 
     html += '<tr class="section-row"><td class="sticky-col" colspan="14">GİDER</td></tr>';
     const giderTotals = new Array(12).fill(0);
     ys.giderGroups.forEach(group=>{
-      html += '<tr class="subsection-row'+(group.id==='kredi'?' kredi':'')+'"><td class="sticky-col" colspan="14">'+escapeAttr(group.name)+'</td></tr>';
       const groupTotals = new Array(12).fill(0);
       group.rows.forEach(r=>{
         const vals = blendedRowValues(r, relevantMonthIdx);
         vals.forEach((v,i)=>{ groupTotals[i]+=v; giderTotals[i]+=v; });
-        html += sheetRow(r.name, vals, true, isFuture12);
       });
-      html += sheetTotalRow(group.name+' Toplamı', groupTotals, true, isFuture12, 'gider-c');
+      html += sheetTotalRow(group.name, groupTotals, true, isFuture12, 'gider-c');
     });
     html += sheetTotalRow('TOPLAM GİDER', giderTotals, true, isFuture12, 'gider-c');
 
@@ -1271,7 +1345,7 @@
       const newYs = {
         startBalance: t.devir[t.devir.length-1] || 0,
         bankCheck: {},
-        gelir: srcYs.gelir.map(r=> mkRow(r.name)),
+        gelirGroups: srcYs.gelirGroups.map(g=> ({ id:g.id, name:g.name, rows: g.rows.map(r=> mkRow(r.name)) })),
         giderGroups: srcYs.giderGroups.map(g=> ({ id:g.id, name:g.name, rows: g.rows.map(r=> mkRow(r.name)) }))
       };
       appData.years[newYear] = newYs;
@@ -1286,11 +1360,15 @@
       render();
     };
 
+    document.getElementById('mainCashMonthSelect').onchange = (e)=>{
+      mainCashMonth = parseInt(e.target.value,10);
+      render();
+    };
+
     document.querySelectorAll('tr[data-type]').forEach(tr=>{
       const type = tr.dataset.type, idx = parseInt(tr.dataset.idx,10);
-      let row;
-      if(type === 'gelir'){ row = ys.gelir[idx]; }
-      else{ const group = findGiderGroup(ys, tr.dataset.group); row = group.rows[idx]; }
+      const group = findGroup(ys, type, tr.dataset.group);
+      let row = group.rows[idx];
       tr.querySelectorAll('input').forEach(inp=>{
         if(inp.classList.contains('sync-check')){
           inp.onchange = ()=>{
@@ -1327,20 +1405,12 @@
 
     document.querySelectorAll('[data-add]').forEach(btn=>{
       btn.onclick = ()=>{
-        let newIdx;
-        if(btn.dataset.add === 'gelir'){
-          ys.gelir.push(mkRow('Yeni Kategori'));
-          newIdx = ys.gelir.length-1;
-        } else {
-          const group = findGiderGroup(ys, btn.dataset.group);
-          group.rows.push(mkRow('Yeni Kategori'));
-          newIdx = group.rows.length-1;
-        }
+        const group = findGroup(ys, btn.dataset.add, btn.dataset.group);
+        group.rows.push(mkRow('Yeni Kategori'));
+        const newIdx = group.rows.length-1;
         scheduleSave();
         render();
-        const sel = btn.dataset.add === 'gelir'
-          ? 'tr[data-type="gelir"][data-idx="'+newIdx+'"]'
-          : 'tr[data-type="gider"][data-group="'+btn.dataset.group+'"][data-idx="'+newIdx+'"]';
+        const sel = 'tr[data-type="'+btn.dataset.add+'"][data-group="'+btn.dataset.group+'"][data-idx="'+newIdx+'"]';
         const newRow = document.querySelector(sel);
         if(newRow){
           setTimeout(()=>{
@@ -1355,12 +1425,8 @@
     document.querySelectorAll('[data-del]').forEach(btn=>{
       btn.onclick = ()=>{
         const type = btn.dataset.del, idx = parseInt(btn.dataset.delidx,10);
-        if(type === 'gelir'){
-          ys.gelir.splice(idx,1);
-        } else {
-          const group = findGiderGroup(ys, btn.dataset.delgroup);
-          group.rows.splice(idx,1);
-        }
+        const group = findGroup(ys, type, btn.dataset.delgroup);
+        group.rows.splice(idx,1);
         scheduleSave();
         render();
       };
