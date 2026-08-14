@@ -118,6 +118,40 @@
     font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold-dim);
   }
 
+  .entry-btn{font-size:14.5px; padding:15px;}
+
+  .month-screen-header{
+    display:flex; align-items:center; gap:8px; padding:12px 14px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:5; background:var(--paper); border-bottom:1px solid var(--line-strong);
+  }
+  .month-nav{display:flex; align-items:center; gap:6px; flex:1; min-width:160px;}
+  .month-nav select{
+    flex:1; background:var(--paper-raised); border:1px solid var(--line); border-radius:9px; padding:10px 8px;
+    color:var(--gold); font-family:'Fraunces',serif; font-size:15px; font-weight:700; text-align:center;
+  }
+  .month-nav select option{background:var(--paper-raised); color:var(--ink);}
+  .month-nav-btn{
+    flex:none; width:38px; height:38px; border-radius:9px; border:1px solid var(--line); background:var(--paper-raised);
+    color:var(--gold); font-size:18px; cursor:pointer;
+  }
+  .month-nav-btn:disabled{opacity:0.3;}
+
+  .grid-wrap.large-mode{max-height:none;}
+  .large-mode .sticky-col-inner{gap:4px;}
+  .large-mode .cat-input{width:118px; font-size:14.5px; padding:12px 4px 12px 12px;}
+  .large-mode .del-btn-inline{font-size:14px; padding:5px 8px;}
+  .large-mode .budget-cell .cell-input.budget{width:58px; padding:13px 2px 13px 4px;}
+  .large-mode .sync-check{width:17px; height:17px; margin-right:6px;}
+  .large-mode .cell-input{width:70px; font-size:14px; padding:13px 6px;}
+  .large-mode .fark-cell{width:70px; font-size:14px; padding:13px 8px;}
+  .large-mode thead th{font-size:12px; padding:10px 6px;}
+  .large-mode thead tr.sub-header th{font-size:11px; padding:8px 4px;}
+  .large-mode .readonly-cell{font-size:14px; padding:13px 10px;}
+  .large-mode .subsection-row td{font-size:12px; padding:9px 12px 9px 20px;}
+  .large-mode .section-row td{font-size:12.5px; padding:10px 12px;}
+  .large-mode .add-row td{padding:8px 12px 8px 20px;}
+  .large-mode .add-btn{font-size:12.5px; padding:8px 14px;}
+
   .grid-wrap{overflow-x:auto; overflow-y:auto; max-height:55vh; padding:0 0 4px; -webkit-overflow-scrolling:touch; border-bottom:1px solid var(--line-strong);}
   table{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%;}
 
@@ -358,6 +392,8 @@
   let dashRange = { start: 0, end: 11 };
   let dashBankMonth = new Date().getMonth();
   let mainCashMonth = null;
+  let mainTableMode = 'month';
+  let mainTableMonth = null;
 
   window.addEventListener('beforeinstallprompt', (e)=>{
     e.preventDefault();
@@ -573,10 +609,147 @@
 
   function rangeSum(arr, s, e){ let sum=0; for(let i=s;i<=e;i++) sum+=arr[i]; return sum; }
 
+  function buildHtmlWithState(){
+    const dataJson = JSON.stringify(appData).replace(/</g, '\\u003c');
+    return '<!DOCTYPE html>\n' + PRISTINE_HTML.replace(
+      /(<script id="app-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
+      function(m, p1, p2, p3){ return p1 + dataJson + p3; }
+    );
+  }
+
+  function attachBackupBar(){
+    document.getElementById('exportBtn').onclick = ()=>{
+      try{
+        const blob = new Blob([buildHtmlWithState()], {type:'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const d = new Date();
+        const stamp = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        a.href = url;
+        a.download = 'nakit-akisi-kopya-'+stamp+'.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=> URL.revokeObjectURL(url), 2000);
+      }catch(e){ alert('İndirme başarısız oldu.'); }
+    };
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.onclick = async ()=>{
+      if(!window.showSaveFilePicker){
+        alert('Bu tarayıcı dosyanın üstüne doğrudan kaydetmeyi desteklemiyor. Bunun yerine "Kopya İndir" kullan ve indirdiğin dosyayı eskisinin üzerine taşı.');
+        return;
+      }
+      try{
+        if(!fileHandle){
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: 'nakit-akisi-carsaf.html',
+            types: [{ description:'HTML dosyası', accept:{'text/html':['.html']} }]
+          });
+        }
+        const writable = await fileHandle.createWritable();
+        await writable.write(buildHtmlWithState());
+        await writable.close();
+        const original = saveBtn.textContent;
+        saveBtn.textContent = '✓ Kaydedildi';
+        setTimeout(()=>{ saveBtn.textContent = original; }, 1400);
+      }catch(e){
+        if(e && e.name !== 'AbortError'){
+          alert('Kaydetme başarısız: ' + e.message);
+        }
+      }
+    };
+
+    document.getElementById('importBtn').onclick = async ()=>{
+      if(window.showOpenFilePicker){
+        try{
+          const [handle] = await window.showOpenFilePicker({
+            types: [{ description:'HTML dosyası', accept:{'text/html':['.html','.htm']} }]
+          });
+          const file = await handle.getFile();
+          const text = await file.text();
+          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
+          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
+          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
+          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
+          fileHandle = handle;
+          appData = parsed;
+          scheduleSave();
+          render();
+        }catch(e){
+          if(e && e.name !== 'AbortError') alert('Dosya açılamadı: ' + e.message);
+        }
+      } else {
+        document.getElementById('importFile').click();
+      }
+    };
+    document.getElementById('importFile').onchange = (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try{
+          const text = ev.target.result;
+          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
+          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
+          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
+          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
+          appData = parsed;
+          scheduleSave();
+          render();
+        }catch(err){
+          alert('Dosya okunamadı. Geçerli bir .html yedek dosyası seçtiğinden emin ol.');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    const installBtn = document.getElementById('installBtn');
+    if(installBtn){
+      installBtn.onclick = async ()=>{
+        if(deferredPrompt){
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        }
+      };
+    }
+  }
+
+  function attachSaveOnlyBtn(){
+    const saveBtn = document.getElementById('saveBtn');
+    if(!saveBtn) return;
+    saveBtn.onclick = async ()=>{
+      if(!window.showSaveFilePicker){
+        alert('Bu tarayıcı dosyanın üstüne doğrudan kaydetmeyi desteklemiyor. Ana ekrandaki "Kopya İndir"i kullan.');
+        return;
+      }
+      try{
+        if(!fileHandle){
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: 'nakit-akisi-carsaf.html',
+            types: [{ description:'HTML dosyası', accept:{'text/html':['.html']} }]
+          });
+        }
+        const writable = await fileHandle.createWritable();
+        await writable.write(buildHtmlWithState());
+        await writable.close();
+        const original = saveBtn.textContent;
+        saveBtn.textContent = '✓ Kaydedildi';
+        setTimeout(()=>{ saveBtn.textContent = original; }, 1400);
+      }catch(e){
+        if(e && e.name !== 'AbortError'){
+          alert('Kaydetme başarısız: ' + e.message);
+        }
+      }
+    };
+  }
+
   function render(){
     if(viewMode === 'dashboard'){ renderDashboard(); return; }
     if(viewMode === 'report'){ renderReport(); return; }
     if(viewMode === 'dashsheet'){ renderDashSheet(); return; }
+    if(viewMode === 'monthscreen'){ renderMonthScreen(); return; }
     const app = document.getElementById('app');
     const prevGridWrap = document.querySelector('.grid-wrap');
     const prevScrollLeft = prevGridWrap ? prevGridWrap.scrollLeft : 0;
@@ -614,7 +787,9 @@
     });
     html += '</div><button class="year-add" id="addYearBtn" title="Yeni yıl ekle">+</button></div>';
 
-    html += '<div class="dash-btn-row"><button class="dash-btn" id="openDashBtn">📊 Dashboard\'u Aç</button></div>';
+    if(mainTableMonth === null) mainTableMonth = relevantMonthIdx;
+    html += '<div class="dash-btn-row"><button class="dash-btn entry-btn" id="openMonthBtn">📝 '+MONTHS_FULL[mainTableMonth]+' Girişini Yap</button></div>';
+    html += '<div class="dash-btn-row" style="padding-top:0;"><button class="dash-btn" id="openDashBtn">📊 Dashboard\'u Aç</button></div>';
 
     html += '<div class="topbar">';
     html += '<div class="topfield"><label>Başlangıç Devir Bakiyesi ('+appData.currentYear+')</label><input type="text" inputmode="decimal" id="startBalInput" value="'+fmtInput(ys.startBalance)+'"></div>';
@@ -662,53 +837,9 @@
     html += '<div class="cash-picker-result"><span>'+MONTHS_FULL[mainCashMonth]+' Sonu Nakdim'+(mcIsFuture?' <b class="blend-tag" style="margin-left:4px;">tahmini</b>':'')+'</span><b class="'+(mcCash>=0?'pos':'neg')+'">'+(mcCash>=0?'+':'')+fmt(mcCash)+' ₺</b></div>';
     html += '</div>';
 
-    html += '<div class="swipe-note">→ Tüm ayları görmek için tabloyu yana kaydırın. Doldurulan "Gerçek" hücreleri o ay için yeşile boyanır.</div>';
-
-    html += '<div class="grid-wrap"><table>';
-    html += '<thead>';
-    html += '<tr class="month-header"><th class="sticky-col" rowspan="2">Kategori</th>';
-    MONTHS.forEach(m=> html += '<th colspan="3">'+m+'</th>');
-    html += '<th rowspan="2">Top.<br>Bütçe</th><th rowspan="2">Top.<br>Gerçek</th><th rowspan="2">Top.<br>Fark</th>';
-    html += '</tr>';
-    html += '<tr class="sub-header">';
-    for(let i=0;i<12;i++){ html += '<th class="b-col">B</th><th class="g-col">G</th><th class="f-col">F</th>'; }
-    html += '</tr>';
-    html += '</thead><tbody>';
-
-    html += '<tr class="section-row"><td class="sticky-col" colspan="40">GELİR</td></tr>';
-    ys.gelirGroups.forEach(group=>{
-      html += '<tr class="subsection-row'+(group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
-      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gelir', group.id));
-      html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gelir" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
-      const gtg = sumRows(group.rows);
-      html += subtotalRowHtml(group.name+' Toplamı', gtg.budget, gtg.actual, false);
-    });
-
-    html += '<tr class="section-row"><td class="sticky-col" colspan="40">GİDER</td></tr>';
-    ys.giderGroups.forEach(group=>{
-      html += '<tr class="subsection-row'+(group.id==='kredi'||group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="40">'+escapeAttr(group.name)+'</td></tr>';
-      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gider', group.id));
-      html += '<tr class="add-row"><td class="sticky-col" colspan="40"><button class="add-btn" data-add="gider" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
-      const gt = sumRows(group.rows);
-      html += subtotalRowHtml(group.name+' Toplamı', gt.budget, gt.actual, true);
-    });
-
-    html += totalRow('TOPLAM GELİR', t.gelirBudget, t.gelirActual, yGelirB, yGelirA, 'gelir-c', false);
-    html += totalRow('TOPLAM GİDER', t.giderBudget, t.giderActual, yGiderB, yGiderA, 'gider-c', true);
-
-    html += netRowHtml(t.netBudget, t.netActual, t.netFark, yNetB, yNetA, yNetA-yNetB);
-
-    html += blendedCashRowHtml(blended, relevantMonthIdx);
-
-    html += devirRowHtml(t.devirBudget, t.devir);
-
-    html += '</tbody></table></div>';
-
     app.innerHTML = html;
     attachHandlers();
 
-    const newGridWrap = document.querySelector('.grid-wrap');
-    if(newGridWrap){ newGridWrap.scrollLeft = prevScrollLeft; newGridWrap.scrollTop = prevGridScrollTop; }
     app.scrollTop = prevAppScrollTop;
   }
 
@@ -716,13 +847,13 @@
     return '<div class="scard"><div class="scard-label">'+label+'</div><div class="scard-val '+cls+'">'+(val>=0&&cls==='pos'?'+':'')+fmt(val)+' ₺</div></div>';
   }
 
-  function renderRow(r, idx, type, groupId){
+  function renderRow(r, idx, type, groupId, monthsToShow, showTotals){
     const tot = rowTotals(r);
     const isGider = (type === 'gider');
     const rowCls = type+'-row'+((groupId==='kredi'||groupId==='krediler') ? ' group-kredi' : '');
     let html = '<tr class="'+rowCls+'" data-type="'+type+'" data-idx="'+idx+'"'+(groupId?(' data-group="'+groupId+'"'):'')+'>';
     html += '<td class="sticky-col"><div class="sticky-col-inner"><button class="del-btn-inline" data-del="'+type+'" data-delidx="'+idx+'"'+(groupId?(' data-delgroup="'+groupId+'"'):'')+' title="Kategoriyi sil">✕</button><input class="cat-input" value="'+escapeAttr(r.name)+'" data-field="name"></div></td>';
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       const m = r.months[i];
       const b = parseTRNumber(m.budget), a = parseTRNumber(m.actual);
       const f = isGider ? (b - a) : (a - b);
@@ -734,96 +865,109 @@
       html += '<td class="'+fc.trim()+' budget-cell"><div class="budget-cell-inner"><input class="cell-input budget" type="text" inputmode="decimal" value="'+fmtInput(bDisp)+'" data-field="budget" data-month="'+i+'"><input type="checkbox" class="sync-check" data-month="'+i+'" title="Bütçeyi gerçekleşene kopyala"'+(matched?' checked':'')+'></div></td>';
       html += '<td class="'+fc.trim()+'"><input class="cell-input actual" type="text" inputmode="decimal" value="'+fmtInput(aDisp)+'" data-field="actual" data-month="'+i+'"></td>';
       html += '<td class="fark-cell'+fc+' '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    });
+    if(showTotals){
+      const totFark = isGider ? (tot.budget - tot.actual) : tot.fark;
+      const totBudgetDisp = isGider ? -tot.budget : tot.budget;
+      const totActualDisp = isGider ? -tot.actual : tot.actual;
+      html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totBudgetDisp)+'</td>';
+      html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totActualDisp)+'</td>';
+      html += '<td class="readonly-cell '+(totFark>=0?'pos':'neg')+'">'+(totFark>=0?'+':'')+fmt(totFark)+'</td>';
     }
-    const totFark = isGider ? (tot.budget - tot.actual) : tot.fark;
-    const totBudgetDisp = isGider ? -tot.budget : tot.budget;
-    const totActualDisp = isGider ? -tot.actual : tot.actual;
-    html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totBudgetDisp)+'</td>';
-    html += '<td class="readonly-cell '+(type==='gelir'?'gelir-c':'gider-c')+'">'+fmt(totActualDisp)+'</td>';
-    html += '<td class="readonly-cell '+(totFark>=0?'pos':'neg')+'">'+(totFark>=0?'+':'')+fmt(totFark)+'</td>';
     html += '</tr>';
     return html;
   }
 
-  function subtotalRowHtml(label, budgetArr, actualArr, isGider){
+  function subtotalRowHtml(label, budgetArr, actualArr, isGider, monthsToShow, showTotals){
     let html = '<tr class="subtotal-row"><td class="sticky-col">'+escapeAttr(label)+'</td>';
     let yb=0, ya=0;
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       const f = isGider ? (budgetArr[i]-actualArr[i]) : (actualArr[i]-budgetArr[i]);
-      yb += budgetArr[i]; ya += actualArr[i];
       const bDisp = isGider ? -budgetArr[i] : budgetArr[i];
       const aDisp = isGider ? -actualArr[i] : actualArr[i];
       html += '<td class="readonly-cell">'+fmt(bDisp)+'</td>';
       html += '<td class="readonly-cell">'+fmt(aDisp)+'</td>';
       html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    });
+    if(showTotals){
+      for(let i=0;i<12;i++){ yb += budgetArr[i]; ya += actualArr[i]; }
+      const yf = isGider ? (yb-ya) : (ya-yb);
+      const ybDisp = isGider ? -yb : yb;
+      const yaDisp = isGider ? -ya : ya;
+      html += '<td class="readonly-cell">'+fmt(ybDisp)+'</td>';
+      html += '<td class="readonly-cell">'+fmt(yaDisp)+'</td>';
+      html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     }
-    const yf = isGider ? (yb-ya) : (ya-yb);
-    const ybDisp = isGider ? -yb : yb;
-    const yaDisp = isGider ? -ya : ya;
-    html += '<td class="readonly-cell">'+fmt(ybDisp)+'</td>';
-    html += '<td class="readonly-cell">'+fmt(yaDisp)+'</td>';
-    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     html += '</tr>';
     return html;
   }
 
-  function totalRow(label, budgetArr, actualArr, yb, ya, colorCls, isGider){
+  function totalRow(label, budgetArr, actualArr, yb, ya, colorCls, isGider, monthsToShow, showTotals){
     let html = '<tr class="total-row"><td class="sticky-col">'+label+'</td>';
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       const f = isGider ? (budgetArr[i]-actualArr[i]) : (actualArr[i]-budgetArr[i]);
       const bDisp = isGider ? -budgetArr[i] : budgetArr[i];
       const aDisp = isGider ? -actualArr[i] : actualArr[i];
       html += '<td class="readonly-cell '+colorCls+'">'+fmt(bDisp)+'</td>';
       html += '<td class="readonly-cell '+colorCls+'">'+fmt(aDisp)+'</td>';
       html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    });
+    if(showTotals){
+      const ybDisp = isGider ? -yb : yb;
+      const yaDisp = isGider ? -ya : ya;
+      html += '<td class="readonly-cell '+colorCls+'">'+fmt(ybDisp)+'</td>';
+      html += '<td class="readonly-cell '+colorCls+'">'+fmt(yaDisp)+'</td>';
+      const yf = isGider ? (yb-ya) : (ya-yb);
+      html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     }
-    const ybDisp = isGider ? -yb : yb;
-    const yaDisp = isGider ? -ya : ya;
-    html += '<td class="readonly-cell '+colorCls+'">'+fmt(ybDisp)+'</td>';
-    html += '<td class="readonly-cell '+colorCls+'">'+fmt(yaDisp)+'</td>';
-    const yf = isGider ? (yb-ya) : (ya-yb);
-    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     html += '</tr>';
     return html;
   }
 
-  function netRowHtml(netBudget, netActual, netFark, yNetB, yNetA, yNetF){
+  function netRowHtml(netBudget, netActual, netFark, yNetB, yNetA, yNetF, monthsToShow, showTotals){
     let html = '<tr class="net-row"><td class="sticky-col">NET AKIŞ</td>';
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       html += '<td class="readonly-cell">'+(netBudget[i]>=0?'+':'')+fmt(netBudget[i])+'</td>';
       html += '<td class="readonly-cell">'+(netActual[i]>=0?'+':'')+fmt(netActual[i])+'</td>';
       html += '<td class="fark-cell">'+(netFark[i]>=0?'+':'')+fmt(netFark[i])+'</td>';
+    });
+    if(showTotals){
+      html += '<td class="readonly-cell">'+(yNetB>=0?'+':'')+fmt(yNetB)+'</td>';
+      html += '<td class="readonly-cell">'+(yNetA>=0?'+':'')+fmt(yNetA)+'</td>';
+      html += '<td class="readonly-cell">'+(yNetF>=0?'+':'')+fmt(yNetF)+'</td>';
     }
-    html += '<td class="readonly-cell">'+(yNetB>=0?'+':'')+fmt(yNetB)+'</td>';
-    html += '<td class="readonly-cell">'+(yNetA>=0?'+':'')+fmt(yNetA)+'</td>';
-    html += '<td class="readonly-cell">'+(yNetF>=0?'+':'')+fmt(yNetF)+'</td>';
     html += '</tr>';
     return html;
   }
 
-  function blendedCashRowHtml(blended, relevantMonthIdx){
+  function blendedCashRowHtml(blended, relevantMonthIdx, monthsToShow, showTotals){
     let html = '<tr class="blend-row"><td class="sticky-col">AY SONU NAKDİM<br><span class="blend-sub">(gerçek + kalan bütçe)</span></td>';
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       const isFuture = i > relevantMonthIdx;
       const v = blended[i];
       html += '<td class="readonly-cell blend-cell'+(isFuture?' blend-future':'')+'" colspan="3">'+(v>=0?'+':'')+fmt(v)+(isFuture?' <span class="blend-tag">tahmini</span>':'')+'</td>';
+    });
+    if(showTotals){
+      html += '<td class="readonly-cell"></td><td class="readonly-cell"></td><td class="readonly-cell blend-cell">'+(blended[11]>=0?'+':'')+fmt(blended[11])+'</td>';
     }
-    html += '<td class="readonly-cell"></td><td class="readonly-cell"></td><td class="readonly-cell blend-cell">'+(blended[11]>=0?'+':'')+fmt(blended[11])+'</td></tr>';
+    html += '</tr>';
     return html;
   }
 
-  function devirRowHtml(devirBudget, devirActual){
+  function devirRowHtml(devirBudget, devirActual, monthsToShow, showTotals){
     let html = '<tr class="devir-row"><td class="sticky-col">REFERANS<br><span class="blend-sub">(2 uç senaryo)</span></td>';
-    for(let i=0;i<12;i++){
+    monthsToShow.forEach(i=>{
       const b = devirBudget[i], a = devirActual[i], f = a-b;
       html += '<td class="readonly-cell">'+(b>=0?'+':'')+fmt(b)+'</td>';
       html += '<td class="readonly-cell">'+(a>=0?'+':'')+fmt(a)+'</td>';
       html += '<td class="fark-cell '+(f>=0?'pos':'neg')+'">'+(f>=0?'+':'')+fmt(f)+'</td>';
+    });
+    if(showTotals){
+      const yb = devirBudget[11], ya = devirActual[11], yf = ya-yb;
+      html += '<td class="readonly-cell">'+(yb>=0?'+':'')+fmt(yb)+'</td>';
+      html += '<td class="readonly-cell">'+(ya>=0?'+':'')+fmt(ya)+'</td>';
+      html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     }
-    const yb = devirBudget[11], ya = devirActual[11], yf = ya-yb;
-    html += '<td class="readonly-cell">'+(yb>=0?'+':'')+fmt(yb)+'</td>';
-    html += '<td class="readonly-cell">'+(ya>=0?'+':'')+fmt(ya)+'</td>';
-    html += '<td class="readonly-cell '+(yf>=0?'pos':'neg')+'">'+(yf>=0?'+':'')+fmt(yf)+'</td>';
     html += '</tr>';
     return html;
   }
@@ -1030,6 +1174,154 @@
       projectedYearEnd_budget, monthsToNegative_budget, projectionDivergence,
       startBalance: parseTRNumber(ys.startBalance)
     };
+  }
+
+  // ---------------- Full-screen single-month data entry ----------------
+  function renderMonthScreen(){
+    const app = document.getElementById('app');
+    const ys = yearState();
+    const t = computeTotals(ys);
+    const blendedInfo = computeBlendedCash(ys, t);
+    const relevantMonthIdx = blendedInfo.relevantMonthIdx;
+    if(mainTableMonth === null) mainTableMonth = relevantMonthIdx;
+    const monthIdx = mainTableMonth;
+    const monthsToShow = [monthIdx];
+
+    const yGelirB = t.gelirBudget.reduce((a,b)=>a+b,0);
+    const yGelirA = t.gelirActual.reduce((a,b)=>a+b,0);
+    const yGiderB = t.giderBudget.reduce((a,b)=>a+b,0);
+    const yGiderA = t.giderActual.reduce((a,b)=>a+b,0);
+    const yNetB = yGelirB - yGiderB;
+    const yNetA = yGelirA - yGiderA;
+
+    let html = '<div class="month-screen-header">';
+    html += '<button class="back-btn" id="backToHomeBtn" style="margin:0;">← Ana Ekran</button>';
+    html += '<div class="month-nav">';
+    html += '<button class="month-nav-btn" id="prevMonthBtn" '+(monthIdx===0?'disabled':'')+'>‹</button>';
+    html += '<select id="monthScreenSelect">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===monthIdx?' selected':'')+'>'+m+' '+appData.currentYear+'</option>');
+    html += '</select>';
+    html += '<button class="month-nav-btn" id="nextMonthBtn" '+(monthIdx===11?'disabled':'')+'>›</button>';
+    html += '</div>';
+    html += '<button class="backup-btn primary" id="saveBtn" style="flex:none; padding:9px 14px;">💾 Kaydet</button>';
+    html += '</div>';
+
+    html += '<div class="grid-wrap large-mode"><table>';
+    html += '<thead>';
+    html += '<tr class="month-header"><th class="sticky-col" rowspan="2">Kategori</th><th colspan="3">'+MONTHS[monthIdx]+'</th></tr>';
+    html += '<tr class="sub-header"><th class="b-col">Bütçe</th><th class="g-col">Gerçek</th><th class="f-col">Fark</th></tr>';
+    html += '</thead><tbody>';
+
+    const totalCols = 4;
+    html += '<tr class="section-row"><td class="sticky-col" colspan="'+totalCols+'">GELİR</td></tr>';
+    ys.gelirGroups.forEach(group=>{
+      html += '<tr class="subsection-row'+(group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="'+totalCols+'">'+escapeAttr(group.name)+'</td></tr>';
+      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gelir', group.id, monthsToShow, false));
+      html += '<tr class="add-row"><td class="sticky-col" colspan="'+totalCols+'"><button class="add-btn" data-add="gelir" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
+      const gtg = sumRows(group.rows);
+      html += subtotalRowHtml(group.name+' Toplamı', gtg.budget, gtg.actual, false, monthsToShow, false);
+    });
+
+    html += '<tr class="section-row"><td class="sticky-col" colspan="'+totalCols+'">GİDER</td></tr>';
+    ys.giderGroups.forEach(group=>{
+      html += '<tr class="subsection-row'+(group.id==='kredi'||group.id==='krediler'?' kredi':'')+'"><td class="sticky-col" colspan="'+totalCols+'">'+escapeAttr(group.name)+'</td></tr>';
+      group.rows.forEach((r,idx)=> html += renderRow(r, idx, 'gider', group.id, monthsToShow, false));
+      html += '<tr class="add-row"><td class="sticky-col" colspan="'+totalCols+'"><button class="add-btn" data-add="gider" data-group="'+group.id+'">+ '+escapeAttr(group.name)+' Kategorisi Ekle</button></td></tr>';
+      const gt = sumRows(group.rows);
+      html += subtotalRowHtml(group.name+' Toplamı', gt.budget, gt.actual, true, monthsToShow, false);
+    });
+
+    html += totalRow('TOPLAM GELİR', t.gelirBudget, t.gelirActual, yGelirB, yGelirA, 'gelir-c', false, monthsToShow, false);
+    html += totalRow('TOPLAM GİDER', t.giderBudget, t.giderActual, yGiderB, yGiderA, 'gider-c', true, monthsToShow, false);
+    html += netRowHtml(t.netBudget, t.netActual, t.netFark, yNetB, yNetA, yNetA-yNetB, monthsToShow, false);
+    html += blendedCashRowHtml(blendedInfo.blended, relevantMonthIdx, monthsToShow, false);
+    html += devirRowHtml(t.devirBudget, t.devir, monthsToShow, false);
+
+    html += '</tbody></table></div>';
+
+    app.innerHTML = html;
+    attachMonthScreenHandlers(ys, monthIdx);
+  }
+
+  function attachMonthScreenHandlers(ys, monthIdx){
+    document.getElementById('backToHomeBtn').onclick = ()=>{ viewMode='main'; render(); };
+    document.getElementById('monthScreenSelect').onchange = (e)=>{
+      mainTableMonth = parseInt(e.target.value,10);
+      render();
+    };
+    const prevBtn = document.getElementById('prevMonthBtn');
+    if(prevBtn) prevBtn.onclick = ()=>{ if(mainTableMonth>0){ mainTableMonth--; render(); } };
+    const nextBtn = document.getElementById('nextMonthBtn');
+    if(nextBtn) nextBtn.onclick = ()=>{ if(mainTableMonth<11){ mainTableMonth++; render(); } };
+
+    attachSaveOnlyBtn();
+
+    document.querySelectorAll('tr[data-type]').forEach(tr=>{
+      const type = tr.dataset.type, idx = parseInt(tr.dataset.idx,10);
+      const group = findGroup(ys, type, tr.dataset.group);
+      let row = group.rows[idx];
+      tr.querySelectorAll('input').forEach(inp=>{
+        if(inp.classList.contains('sync-check')){
+          inp.onchange = ()=>{
+            const mIdx = parseInt(inp.dataset.month,10);
+            if(inp.checked){
+              row.months[mIdx].actual = parseTRNumber(row.months[mIdx].budget);
+            } else {
+              row.months[mIdx].actual = 0;
+            }
+            scheduleSave();
+            render();
+          };
+          return;
+        }
+        inp.onchange = ()=>{
+          const field = inp.dataset.field;
+          if(field === 'name'){
+            row.name = inp.value;
+          } else if(field === 'budget'){
+            const mIdx = parseInt(inp.dataset.month,10);
+            let val = parseTRNumber(inp.value);
+            if(type === 'gider') val = Math.abs(val);
+            for(let i=mIdx;i<12;i++){ row.months[i].budget = val; }
+          } else if(field === 'actual'){
+            let val = parseTRNumber(inp.value);
+            if(type === 'gider') val = Math.abs(val);
+            row.months[parseInt(inp.dataset.month,10)].actual = val;
+          }
+          scheduleSave();
+          render();
+        };
+      });
+    });
+
+    document.querySelectorAll('[data-add]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const group = findGroup(ys, btn.dataset.add, btn.dataset.group);
+        group.rows.push(mkRow('Yeni Kategori'));
+        const newIdx = group.rows.length-1;
+        scheduleSave();
+        render();
+        const sel = 'tr[data-type="'+btn.dataset.add+'"][data-group="'+btn.dataset.group+'"][data-idx="'+newIdx+'"]';
+        const newRow = document.querySelector(sel);
+        if(newRow){
+          setTimeout(()=>{
+            scrollFieldIntoTopView(newRow);
+            newRow.classList.add('row-highlight');
+            setTimeout(()=>{ newRow.classList.remove('row-highlight'); }, 2200);
+          }, 50);
+        }
+      };
+    });
+
+    document.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const type = btn.dataset.del, idx = parseInt(btn.dataset.delidx,10);
+        const group = findGroup(ys, type, btn.dataset.delgroup);
+        group.rows.splice(idx,1);
+        scheduleSave();
+        render();
+      };
+    });
   }
 
   function renderReport(){
@@ -1326,6 +1618,7 @@
     const ys = yearState();
 
     document.getElementById('openDashBtn').onclick = ()=>{ viewMode='dashboard'; render(); };
+    document.getElementById('openMonthBtn').onclick = ()=>{ viewMode='monthscreen'; render(); };
 
     document.querySelectorAll('.year-chip').forEach(chip=>{
       chip.onclick = ()=>{
@@ -1365,177 +1658,7 @@
       render();
     };
 
-    document.querySelectorAll('tr[data-type]').forEach(tr=>{
-      const type = tr.dataset.type, idx = parseInt(tr.dataset.idx,10);
-      const group = findGroup(ys, type, tr.dataset.group);
-      let row = group.rows[idx];
-      tr.querySelectorAll('input').forEach(inp=>{
-        if(inp.classList.contains('sync-check')){
-          inp.onchange = ()=>{
-            const monthIdx = parseInt(inp.dataset.month,10);
-            if(inp.checked){
-              row.months[monthIdx].actual = parseTRNumber(row.months[monthIdx].budget);
-            } else {
-              row.months[monthIdx].actual = 0;
-            }
-            scheduleSave();
-            render();
-          };
-          return;
-        }
-        inp.onchange = ()=>{
-          const field = inp.dataset.field;
-          if(field === 'name'){
-            row.name = inp.value;
-          } else if(field === 'budget'){
-            const monthIdx = parseInt(inp.dataset.month,10);
-            let val = parseTRNumber(inp.value);
-            if(type === 'gider') val = Math.abs(val);
-            for(let i=monthIdx;i<12;i++){ row.months[i].budget = val; }
-          } else if(field === 'actual'){
-            let val = parseTRNumber(inp.value);
-            if(type === 'gider') val = Math.abs(val);
-            row.months[parseInt(inp.dataset.month,10)].actual = val;
-          }
-          scheduleSave();
-          render();
-        };
-      });
-    });
-
-    document.querySelectorAll('[data-add]').forEach(btn=>{
-      btn.onclick = ()=>{
-        const group = findGroup(ys, btn.dataset.add, btn.dataset.group);
-        group.rows.push(mkRow('Yeni Kategori'));
-        const newIdx = group.rows.length-1;
-        scheduleSave();
-        render();
-        const sel = 'tr[data-type="'+btn.dataset.add+'"][data-group="'+btn.dataset.group+'"][data-idx="'+newIdx+'"]';
-        const newRow = document.querySelector(sel);
-        if(newRow){
-          setTimeout(()=>{
-            scrollFieldIntoTopView(newRow);
-            newRow.classList.add('row-highlight');
-            setTimeout(()=>{ newRow.classList.remove('row-highlight'); }, 2200);
-          }, 50);
-        }
-      };
-    });
-
-    document.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.onclick = ()=>{
-        const type = btn.dataset.del, idx = parseInt(btn.dataset.delidx,10);
-        const group = findGroup(ys, type, btn.dataset.delgroup);
-        group.rows.splice(idx,1);
-        scheduleSave();
-        render();
-      };
-    });
-
-    function buildHtmlWithState(){
-      const dataJson = JSON.stringify(appData).replace(/</g, '\\u003c');
-      return '<!DOCTYPE html>\n' + PRISTINE_HTML.replace(
-        /(<script id="app-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
-        function(m, p1, p2, p3){ return p1 + dataJson + p3; }
-      );
-    }
-
-    document.getElementById('exportBtn').onclick = ()=>{
-      try{
-        const blob = new Blob([buildHtmlWithState()], {type:'text/html'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const d = new Date();
-        const stamp = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        a.href = url;
-        a.download = 'nakit-akisi-kopya-'+stamp+'.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(()=> URL.revokeObjectURL(url), 2000);
-      }catch(e){ alert('İndirme başarısız oldu.'); }
-    };
-
-    const saveBtn = document.getElementById('saveBtn');
-    saveBtn.onclick = async ()=>{
-      if(!window.showSaveFilePicker){
-        alert('Bu tarayıcı dosyanın üstüne doğrudan kaydetmeyi desteklemiyor. Bunun yerine "Kopya İndir" kullan ve indirdiğin dosyayı eskisinin üzerine taşı.');
-        return;
-      }
-      try{
-        if(!fileHandle){
-          fileHandle = await window.showSaveFilePicker({
-            suggestedName: 'nakit-akisi-carsaf.html',
-            types: [{ description:'HTML dosyası', accept:{'text/html':['.html']} }]
-          });
-        }
-        const writable = await fileHandle.createWritable();
-        await writable.write(buildHtmlWithState());
-        await writable.close();
-        const original = saveBtn.textContent;
-        saveBtn.textContent = '✓ Kaydedildi';
-        setTimeout(()=>{ saveBtn.textContent = original; }, 1400);
-      }catch(e){
-        if(e && e.name !== 'AbortError'){
-          alert('Kaydetme başarısız: ' + e.message);
-        }
-      }
-    };
-
-    document.getElementById('importBtn').onclick = async ()=>{
-      if(window.showOpenFilePicker){
-        try{
-          const [handle] = await window.showOpenFilePicker({
-            types: [{ description:'HTML dosyası', accept:{'text/html':['.html','.htm']} }]
-          });
-          const file = await handle.getFile();
-          const text = await file.text();
-          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
-          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
-          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
-          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
-          fileHandle = handle;
-          appData = parsed;
-          scheduleSave();
-          render();
-        }catch(e){
-          if(e && e.name !== 'AbortError') alert('Dosya açılamadı: ' + e.message);
-        }
-      } else {
-        document.getElementById('importFile').click();
-      }
-    };
-    document.getElementById('importFile').onchange = (e)=>{
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev)=>{
-        try{
-          const text = ev.target.result;
-          const match = text.match(/<script id="app-data" type="application\/json">([\s\S]*?)<\/script>/);
-          if(!match){ alert('Bu dosyada uygulama verisi bulunamadı.'); return; }
-          const parsed = migrateAppData(JSON.parse(match[1].trim() || '{}'));
-          if(!parsed){ alert('Bu dosya geçerli bir yedek dosyası değil.'); return; }
-          appData = parsed;
-          scheduleSave();
-          render();
-        }catch(err){
-          alert('Dosya okunamadı. Geçerli bir .html yedek dosyası seçtiğinden emin ol.');
-        }
-      };
-      reader.readAsText(file);
-    };
-
-    const installBtn = document.getElementById('installBtn');
-    if(installBtn){
-      installBtn.onclick = async ()=>{
-        if(deferredPrompt){
-          deferredPrompt.prompt();
-          await deferredPrompt.userChoice;
-          deferredPrompt = null;
-        }
-      };
-    }
+    attachBackupBar();
   }
 
   let currentFocusedInput = null;
