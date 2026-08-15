@@ -416,7 +416,8 @@
         { id:'genel', name:'Genel Gelir', rows:[
           mkRow("Maaş"), mkRow("Müzik / Telif"), mkRow("Sponsorluk"), mkRow("Freelance"), mkRow("Diğer Gelir")
         ]},
-        { id:'krediler', name:'Krediler', rows:[] }
+        { id:'krediler', name:'Krediler', rows:[] },
+        { id:'vadeli', name:'Vadeli Hesaplar', rows:[] }
       ],
       giderGroups: [
         { id:'nakit', name:'Nakit Giderler', rows:[
@@ -483,6 +484,9 @@
     }
     if(!parsed.gelirGroups.find(g=>g.id==='krediler')){
       parsed.gelirGroups.push({ id:'krediler', name:'Krediler', rows: [] });
+    }
+    if(!parsed.gelirGroups.find(g=>g.id==='vadeli')){
+      parsed.gelirGroups.push({ id:'vadeli', name:'Vadeli Hesaplar', rows: [] });
     }
     if(typeof parsed.startBalance !== 'number') parsed.startBalance = parseTRNumber(parsed.startBalance);
     if(!parsed.bankCheck || typeof parsed.bankCheck !== 'object') parsed.bankCheck = {};
