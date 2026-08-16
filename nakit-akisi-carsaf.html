@@ -119,6 +119,13 @@
   }
 
   .entry-btn{font-size:14.5px; padding:15px;}
+  .entry-picker-row{display:flex; gap:8px; margin:8px 14px 12px;}
+  .entry-picker-row select{
+    flex:1; background:var(--paper-raised); border:1px solid var(--gold-dim); border-radius:11px; padding:12px;
+    color:var(--gold); font-family:'Fraunces',serif; font-size:15px; font-weight:700; text-align:center;
+  }
+  .entry-picker-row select option{background:var(--paper-raised); color:var(--ink);}
+  .entry-picker-row .entry-btn{flex:1.3; margin:0;}
 
   .month-screen-header{
     display:flex; align-items:center; gap:8px; padding:12px 14px; flex-wrap:wrap;
@@ -164,8 +171,8 @@
     font-weight:600; padding:6px 4px; text-align:center; border-bottom:1px solid var(--line-strong);
   }
   thead tr.month-header th{font-size:10px; padding:7px 4px; border-right:1px solid var(--line-strong);}
-  tbody tr{scroll-margin-top:88px;}
-  .cell-input, .cat-input{scroll-margin-top:88px;}
+  tbody tr{scroll-margin-top:130px;}
+  .cell-input, .cat-input{scroll-margin-top:130px;}
   thead tr.sub-header th{font-size:8.5px; padding:5px 2px; color:var(--ink-faint); font-weight:600;}
   thead tr.sub-header th.b-col{color:var(--gold-dim);}
   thead tr.sub-header th.g-col{color:var(--ink-dim);}
@@ -792,7 +799,12 @@
     html += '</div><button class="year-add" id="addYearBtn" title="Yeni yıl ekle">+</button></div>';
 
     if(mainTableMonth === null) mainTableMonth = relevantMonthIdx;
-    html += '<div class="dash-btn-row"><button class="dash-btn entry-btn" id="openMonthBtn">📝 '+MONTHS_FULL[mainTableMonth]+' Girişini Yap</button></div>';
+    html += '<div class="entry-picker-row">';
+    html += '<select id="homeMonthSelect">';
+    MONTHS_FULL.forEach((m,i)=> html += '<option value="'+i+'"'+(i===mainTableMonth?' selected':'')+'>'+m+'</option>');
+    html += '</select>';
+    html += '<button class="dash-btn entry-btn" id="openMonthBtn">📝 Girişini Yap</button>';
+    html += '</div>';
     html += '<div class="dash-btn-row" style="padding-top:0;"><button class="dash-btn" id="openDashBtn">📊 Dashboard\'u Aç</button></div>';
 
     html += '<div class="topbar">';
@@ -1622,7 +1634,15 @@
     const ys = yearState();
 
     document.getElementById('openDashBtn').onclick = ()=>{ viewMode='dashboard'; render(); };
-    document.getElementById('openMonthBtn').onclick = ()=>{ viewMode='monthscreen'; render(); };
+    document.getElementById('homeMonthSelect').onchange = (e)=>{
+      mainTableMonth = parseInt(e.target.value,10);
+    };
+    document.getElementById('openMonthBtn').onclick = ()=>{
+      const sel = document.getElementById('homeMonthSelect');
+      if(sel) mainTableMonth = parseInt(sel.value,10);
+      viewMode='monthscreen';
+      render();
+    };
 
     document.querySelectorAll('.year-chip').forEach(chip=>{
       chip.onclick = ()=>{
@@ -1673,6 +1693,18 @@
     }catch(e){
       try{ el.scrollIntoView({block:'start'}); }catch(e2){}
     }
+    requestAnimationFrame(()=>{
+      const header = document.querySelector('.month-screen-header') || document.querySelector('.year-bar');
+      if(!header || !el.getBoundingClientRect) return;
+      const headerRect = header.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const buffer = 14;
+      const minTop = headerRect.bottom + buffer;
+      if(elRect.top < minTop){
+        const appEl = document.getElementById('app');
+        if(appEl) appEl.scrollTop -= (minTop - elRect.top);
+      }
+    });
   }
 
   function keepFocusedVisible(){
